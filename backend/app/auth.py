@@ -5,6 +5,7 @@ import uuid
 
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from . import models
 
@@ -27,7 +28,7 @@ def create_session_for_user(db: Session, user: models.User) -> models.SessionTok
     return session
 
 
-def get_user_by_token(db: Session, token: str) -> models.User | None:
+def get_user_by_token(db: Session, token: str) -> Optional[models.User]:
     if not token:
         return None
     session = (

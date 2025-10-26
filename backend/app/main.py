@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import logging
 import uuid
-from typing import List
+from typing import List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -259,7 +259,7 @@ def create_food_item(
     if not name:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Food name is required")
 
-    def _clean(value: str | None) -> str | None:
+    def _clean(value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
         cleaned = value.strip()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import Cookie, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from . import auth, models
 from .database import get_session
@@ -13,7 +14,7 @@ def get_db() -> Session:
 
 
 async def get_token(
-    authorization: str | None = Header(default=None), session_token: str | None = Cookie(default=None)
+    authorization: Optional[str] = Header(default=None), session_token: Optional[str] = Cookie(default=None)
 ) -> str:
     if authorization and authorization.lower().startswith("bearer "):
         return authorization.split(" ", 1)[1]

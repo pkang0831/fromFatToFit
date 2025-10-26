@@ -7,7 +7,7 @@ import json
 import pathlib
 import sys
 import uuid
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Optional
 
 from sqlalchemy import select
 
@@ -36,7 +36,7 @@ def load_records(path: pathlib.Path) -> Iterator[dict]:
     raise ValueError(f"Unsupported file format: {path.suffix}")
 
 
-def normalize(value: object) -> str | None:
+def normalize(value: object) -> Optional[str]:
     if value is None:
         return None
     if isinstance(value, str):
@@ -45,7 +45,7 @@ def normalize(value: object) -> str | None:
     return str(value)
 
 
-def to_float(value: object) -> float | None:
+def to_float(value: object) -> Optional[float]:
     try:
         if value is None or value == "":
             return None
@@ -54,7 +54,7 @@ def to_float(value: object) -> float | None:
         return None
 
 
-def import_foods(records: Iterable[dict], user_id: int | None) -> tuple[int, int]:
+def import_foods(records: Iterable[dict], user_id: Optional[int]) -> tuple[int, int]:
     created = updated = 0
     with SessionLocal() as session:
         if user_id is not None:
@@ -119,7 +119,7 @@ def import_foods(records: Iterable[dict], user_id: int | None) -> tuple[int, int
     return created, updated
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Import local food items into the database")
     parser.add_argument("path", type=pathlib.Path, help="Path to a JSON or CSV file")
     parser.add_argument(

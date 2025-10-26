@@ -6,13 +6,13 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Iterable, Sequence, TextIO
+from typing import Iterable, Sequence, TextIO, Optional
 
 
 class _RateLimiter:
     """Simple rate limiter enforcing a maximum number of calls per window."""
 
-    def __init__(self, *, max_calls: int | None, window_seconds: float) -> None:
+    def __init__(self, *, max_calls: Optional[int], window_seconds: float) -> None:
         self._max_calls = max_calls
         self._window_seconds = window_seconds
         self._window_start = time.monotonic()
@@ -82,13 +82,13 @@ def _request(
 def iter_foods(
     api_key: str,
     *,
-    data_types: Sequence[str] | None,
+    data_types: Optional[Sequence[str]],
     page_size: int,
     start_page: int,
-    max_pages: int | None,
+    max_pages: Optional[int],
     delay: float,
     timeout: float,
-    requests_per_hour: int | None,
+    requests_per_hour: Optional[int],
 ) -> Iterable[dict]:
     page = start_page
     retrieved_pages = 0
@@ -178,7 +178,7 @@ def dump_foods_parquet(
     if parent := target_path.parent:
         parent.mkdir(parents=True, exist_ok=True)
 
-    writer: pq.ParquetWriter | None = None
+    writer: Optional[pq.ParquetWriter] = None
     buffer: list[dict] = []
     count = 0
 
@@ -229,7 +229,7 @@ def _load_env_file() -> None:
     load_dotenv()
 
 
-def _from_env(name: str) -> str | None:
+def _from_env(name: str) -> Optional[str]:
     import os
 
     value = os.getenv(name)
@@ -251,10 +251,10 @@ if __name__ == "__main__":
     DATA_TYPES: Sequence[str] = DEFAULT_DATA_TYPES
     PAGE_SIZE = 200
     START_PAGE = 1
-    MAX_PAGES: int | None = None
+    MAX_PAGES: Optional[int] = None
     DELAY_SECONDS = 3.6
     TIMEOUT_SECONDS = 30.0
-    REQUESTS_PER_HOUR: int | None = 1000
+    REQUESTS_PER_HOUR: Optional[int] = 1000
 
     OUTPUT_FORMAT = "parquet"  # Options: "parquet", "jsonl", "json"
     OUTPUT_PATH = "usda_foods.parquet"
@@ -289,7 +289,7 @@ if __name__ == "__main__":
             )
             print(f"Wrote {count} food records to {OUTPUT_PATH}")
         else:
-            destination: TextIO | None = None
+            destination: Optional[TextIO] = None
             close_destination = False
             try:
                 if OUTPUT_PATH:
