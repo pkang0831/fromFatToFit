@@ -213,3 +213,4 @@ __marimo__/
 *.zip
 backend/app/data/FoodData_Central_csv/*
 backend/app/data/FoodData_Central_Supporting_Data_csv/*
+*.parquet
