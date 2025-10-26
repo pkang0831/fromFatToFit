@@ -139,6 +139,25 @@ def dump_foods(
     return count
 
 
+def _parquet_row(food: dict) -> dict:
+    """Return a normalized row for Parquet output.
+
+    Keeping the schema stable across batches prevents pyarrow from
+    complaining when optional USDA fields (e.g. ``foodCode`` vs
+    ``ndbNumber``) appear in different records. We persist a handful of
+    high-signal columns and tuck the full JSON payload into ``rawJson`` so
+    no information is lost.
+    """
+
+    return {
+        "fdcId": food.get("fdcId"),
+        "dataType": food.get("dataType"),
+        "description": food.get("description"),
+        "publicationDate": food.get("publicationDate"),
+        "rawJson": json.dumps(food, ensure_ascii=False),
+    }
+
+
 def dump_foods_parquet(
     foods: Iterable[dict],
     path: str,
@@ -167,7 +186,18 @@ def dump_foods_parquet(
         nonlocal writer, buffer, count
         if not buffer:
             return
-        table = pa.Table.from_pylist(buffer)
+        table = pa.Table.from_pylist(
+            buffer,
+            schema=pa.schema(
+                [
+                    ("fdcId", pa.int64()),
+                    ("dataType", pa.string()),
+                    ("description", pa.string()),
+                    ("publicationDate", pa.string()),
+                    ("rawJson", pa.large_string()),
+                ]
+            ),
+        )
         if writer is None:
             writer = pq.ParquetWriter(str(target_path), table.schema)
         writer.write_table(table)
@@ -176,7 +206,7 @@ def dump_foods_parquet(
 
     try:
         for food in foods:
-            buffer.append(food)
+            buffer.append(_parquet_row(food))
             if len(buffer) >= batch_size:
                 flush()
         flush()
