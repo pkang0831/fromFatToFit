@@ -10,6 +10,32 @@ import urllib.request
 from typing import Iterable, Sequence, TextIO
 
 
+class _RateLimiter:
+    """Simple rate limiter enforcing a maximum number of calls per window."""
+
+    def __init__(self, *, max_calls: int | None, window_seconds: float) -> None:
+        self._max_calls = max_calls
+        self._window_seconds = window_seconds
+        self._window_start = time.monotonic()
+        self._calls = 0
+
+    def wait(self) -> None:
+        if not self._max_calls:
+            return
+        now = time.monotonic()
+        elapsed = now - self._window_start
+        if elapsed >= self._window_seconds:
+            self._window_start = now
+            self._calls = 0
+        if self._calls >= self._max_calls:
+            remaining = self._window_seconds - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
+            self._window_start = time.monotonic()
+            self._calls = 0
+        self._calls += 1
+
+
 API_ROOT = "https://api.nal.usda.gov/fdc/v1"
 DEFAULT_DATA_TYPES = (
     "Branded",
@@ -63,10 +89,13 @@ def iter_foods(
     max_pages: int | None,
     delay: float,
     timeout: float,
+    requests_per_hour: int | None,
 ) -> Iterable[dict]:
     page = start_page
     retrieved_pages = 0
+    rate_limiter = _RateLimiter(max_calls=requests_per_hour, window_seconds=3600.0)
     while True:
+        rate_limiter.wait()
         payload = {"pageSize": page_size, "pageNumber": page}
         if data_types:
             payload["dataType"] = list(data_types)
@@ -111,6 +140,54 @@ def dump_foods(
     return count
 
 
+def dump_foods_parquet(
+    foods: Iterable[dict],
+    path: str,
+    *,
+    batch_size: int,
+) -> int:
+    from pathlib import Path
+
+    try:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+    except ImportError as exc:  # pragma: no cover - optional dependency
+        raise RuntimeError(
+            "pyarrow is required to write Parquet output. Install it or select a JSON format."
+        ) from exc
+
+    target_path = Path(path)
+    if parent := target_path.parent:
+        parent.mkdir(parents=True, exist_ok=True)
+
+    writer: pq.ParquetWriter | None = None
+    buffer: list[dict] = []
+    count = 0
+
+    def flush() -> None:
+        nonlocal writer, buffer, count
+        if not buffer:
+            return
+        table = pa.Table.from_pylist(buffer)
+        if writer is None:
+            writer = pq.ParquetWriter(str(target_path), table.schema)
+        writer.write_table(table)
+        count += len(buffer)
+        buffer = []
+
+    try:
+        for food in foods:
+            buffer.append(food)
+            if len(buffer) >= batch_size:
+                flush()
+        flush()
+    finally:
+        if writer is not None:
+            writer.close()
+
+    return count
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Download food records from the USDA FoodData Central API",
@@ -151,8 +228,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--delay",
         type=float,
-        default=0.5,
+        default=3.6,
         help="Delay in seconds between API calls to avoid rate limiting",
+    )
+    parser.add_argument(
+        "--requests-per-hour",
+        type=int,
+        default=1000,
+        help="Maximum number of USDA API requests per hour (set to 0 to disable)",
     )
     parser.add_argument(
         "--timeout",
@@ -162,9 +245,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--output",
-        type=argparse.FileType("w", encoding="utf-8"),
-        default=sys.stdout,
-        help="Where to write the downloaded foods (default: stdout)",
+        default=None,
+        help="Where to write the downloaded foods (default: stdout for JSON output)",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("jsonl", "json", "parquet"),
+        default="jsonl",
+        help="Output format for the downloaded foods",
+    )
+    parser.add_argument(
+        "--parquet-batch-size",
+        type=int,
+        default=500,
+        help="Number of records to buffer before writing a Parquet row group",
     )
     parser.add_argument(
         "--pretty",
@@ -191,6 +285,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--delay cannot be negative")
     if args.timeout <= 0:
         parser.error("--timeout must be greater than zero")
+    if args.requests_per_hour is not None and args.requests_per_hour < 0:
+        parser.error("--requests-per-hour cannot be negative")
+    if args.format == "parquet" and not args.output:
+        parser.error("--output is required when --format is parquet")
+    if args.parquet_batch_size <= 0:
+        parser.error("--parquet-batch-size must be a positive integer")
+    if args.pretty and args.format != "json":
+        parser.error("--pretty is only supported when --format is json")
 
     return args
 
@@ -216,15 +318,38 @@ def main(argv: Sequence[str] | None = None) -> int:
         max_pages=args.max_pages,
         delay=args.delay,
         timeout=args.timeout,
+        requests_per_hour=args.requests_per_hour or None,
     )
 
     try:
-        count = dump_foods(foods, args.output, pretty=args.pretty)
+        if args.format == "parquet":
+            count = dump_foods_parquet(
+                foods,
+                args.output,
+                batch_size=args.parquet_batch_size,
+            )
+            print(f"Wrote {count} food records to {args.output}")
+            return 0
+
+        destination: TextIO | None = None
+        close_destination = False
+        try:
+            if args.output:
+                destination = open(args.output, "w", encoding="utf-8")
+                close_destination = True
+            else:
+                destination = sys.stdout
+
+            pretty = args.pretty if args.format == "json" else False
+            count = dump_foods(foods, destination, pretty=pretty)
+        finally:
+            if close_destination and destination is not None:
+                destination.close()
     except BrokenPipeError:  # pragma: no cover - depends on shell piping
         return 1
 
-    if args.output is not sys.stdout:
-        print(f"Wrote {count} food records to {args.output.name}")
+    if args.output:
+        print(f"Wrote {count} food records to {args.output}")
     return 0
 
 
