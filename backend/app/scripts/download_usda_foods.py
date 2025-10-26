@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import json
 import sys
 import time
@@ -267,13 +266,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     args = parser.parse_args(argv)
 
-    if args.api_key is None:
-        args.api_key = _from_env("USDA_API_KEY")
-    if not args.api_key:
-        parser.error("An API key must be provided via --api-key or the USDA_API_KEY environment variable")
+    try:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+    except ImportError as exc:  # pragma: no cover - optional dependency
+        raise RuntimeError(
+            "pyarrow is required to write Parquet output. Install it or select a JSON format."
+        ) from exc
 
-    if not args.data_types:
-        args.data_types = list(DEFAULT_DATA_TYPES)
+    target_path = Path(path)
+    if parent := target_path.parent:
+        parent.mkdir(parents=True, exist_ok=True)
 
     if args.page_size <= 0 or args.page_size > 200:
         parser.error("--page-size must be between 1 and 200")
@@ -294,7 +297,28 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     if args.pretty and args.format != "json":
         parser.error("--pretty is only supported when --format is json")
 
-    return args
+    def flush() -> None:
+        nonlocal writer, buffer, count
+        if not buffer:
+            return
+        table = pa.Table.from_pylist(buffer)
+        if writer is None:
+            writer = pq.ParquetWriter(str(target_path), table.schema)
+        writer.write_table(table)
+        count += len(buffer)
+        buffer = []
+
+    try:
+        for food in foods:
+            buffer.append(food)
+            if len(buffer) >= batch_size:
+                flush()
+        flush()
+    finally:
+        if writer is not None:
+            writer.close()
+
+    return count
 
 
 def _from_env(name: str) -> str | None:
@@ -307,8 +331,31 @@ def _from_env(name: str) -> str | None:
     return None
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv)
+if __name__ == "__main__":
+    API_KEY = _from_env("USDA_API_KEY")
+    if not API_KEY:
+        raise RuntimeError(
+            "Set the USDA_API_KEY environment variable or replace API_KEY with your key."
+        )
+
+    DATA_TYPES: Sequence[str] = DEFAULT_DATA_TYPES
+    PAGE_SIZE = 200
+    START_PAGE = 1
+    MAX_PAGES: int | None = None
+    DELAY_SECONDS = 3.6
+    TIMEOUT_SECONDS = 30.0
+    REQUESTS_PER_HOUR: int | None = 1000
+
+    OUTPUT_FORMAT = "parquet"  # Options: "parquet", "jsonl", "json"
+    OUTPUT_PATH = "usda_foods.parquet"
+    PARQUET_BATCH_SIZE = 500
+    PRETTY_JSON = False
+
+    SUPPORTED_FORMATS = {"parquet", "jsonl", "json"}
+    if OUTPUT_FORMAT not in SUPPORTED_FORMATS:
+        raise RuntimeError(
+            f"Unsupported OUTPUT_FORMAT '{OUTPUT_FORMAT}'. Choose from {sorted(SUPPORTED_FORMATS)}."
+        )
 
     foods = iter_foods(
         args.api_key,
