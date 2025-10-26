@@ -31,6 +31,7 @@ class User(Base):
     sessions = relationship("SessionToken", back_populates="user", cascade="all, delete-orphan")
     meals = relationship("Meal", back_populates="user", cascade="all, delete-orphan")
     summaries = relationship("DailySummary", back_populates="user", cascade="all, delete-orphan")
+    weight_logs = relationship("WeightLog", back_populates="user", cascade="all, delete-orphan")
 
 
 class SessionToken(Base):
@@ -125,6 +126,23 @@ class DailySummary(Base):
     total_carbs = Column(Float, nullable=False, default=0.0)
     total_fat = Column(Float, nullable=False, default=0.0)
     motivation_message = Column(Text, nullable=True)
+    message_trigger = Column(String(50), nullable=True)
+    message_push = Column(Text, nullable=True)
+    message_email_subject = Column(String(255), nullable=True)
+    message_email_body = Column(Text, nullable=True)
     updated_at = Column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
 
     user = relationship("User", back_populates="summaries")
+
+
+class WeightLog(Base):
+    __tablename__ = "weight_logs"
+    __table_args__ = (UniqueConstraint("user_id", "date", name="uq_weight_user_date"),)
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    date = Column(Date, default=dt.date.today, nullable=False)
+    weight_kg = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="weight_logs")

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from . import auth, models, schemas
 from .database import Base, engine
 from .dependencies import get_current_user, get_db, get_token
+from .services.motivation import MotivationMessageService
 
 Base.metadata.create_all(bind=engine)
 
@@ -66,18 +67,9 @@ def _recalculate_summary(db: Session, user: models.User, date: dt.date) -> model
     summary.total_protein = total_protein
     summary.total_carbs = total_carbs
     summary.total_fat = total_fat
-    summary.motivation_message = _generate_message(user.daily_calorie_target, total_calories)
     db.flush()
+    MotivationMessageService(db).apply(user, summary)
     return summary
-
-
-def _generate_message(target: int, total: float) -> str:
-    diff = total - target
-    if diff > 200:
-        return "You're in a calorie surplus today. Consider a light evening walk to balance things out!"
-    if diff < -200:
-        return "Nice deficit! Make sure you're fueling enough to keep energy levels high."
-    return "Right on target—consistency pays off. Keep it up!"
 
 
 @app.post("/auth/register", response_model=schemas.SessionOut, status_code=status.HTTP_201_CREATED)
@@ -180,6 +172,26 @@ def get_summary_by_date(
 ):
     summary = _recalculate_summary(db, current_user, date)
     return summary
+
+
+@app.get("/messages/today", response_model=schemas.MotivationMessageOut)
+def get_today_message(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    today = dt.date.today()
+    summary = _recalculate_summary(db, current_user, today)
+    return schemas.build_message_response(summary)
+
+
+@app.get("/messages/{date}", response_model=schemas.MotivationMessageOut)
+def get_message_by_date(
+    date: dt.date,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    summary = _recalculate_summary(db, current_user, date)
+    return schemas.build_message_response(summary)
 
 
 @app.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)

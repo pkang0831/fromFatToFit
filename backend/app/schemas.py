@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -83,6 +83,13 @@ class MealOut(BaseModel):
         orm_mode = True
 
 
+class MotivationMessageChannels(BaseModel):
+    in_app: Optional[str] = None
+    push: Optional[str] = None
+    email_subject: Optional[str] = None
+    email_body: Optional[str] = None
+
+
 class DailySummaryOut(BaseModel):
     date: dt.date
     total_calories: float
@@ -90,6 +97,10 @@ class DailySummaryOut(BaseModel):
     total_carbs: float
     total_fat: float
     motivation_message: Optional[str]
+    message_trigger: Optional[str] = None
+    message_push: Optional[str] = None
+    message_email_subject: Optional[str] = None
+    message_email_body: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -129,3 +140,26 @@ class FoodItemOut(FoodItemBase):
 class FoodSearchResponse(BaseModel):
     query: str
     results: List[FoodItemOut]
+
+
+class MotivationMessageOut(BaseModel):
+    date: dt.date
+    trigger: Optional[str] = None
+    channels: MotivationMessageChannels
+
+
+if TYPE_CHECKING:  # pragma: no cover - import only used for typing
+    from . import models
+
+
+def build_message_response(summary: "models.DailySummary") -> MotivationMessageOut:
+    return MotivationMessageOut(
+        date=summary.date,
+        trigger=summary.message_trigger,
+        channels=MotivationMessageChannels(
+            in_app=summary.motivation_message,
+            push=summary.message_push,
+            email_subject=summary.message_email_subject,
+            email_body=summary.message_email_body,
+        ),
+    )
