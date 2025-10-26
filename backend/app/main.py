@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
+import uuid
 from typing import List
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from . import auth, models, schemas
@@ -15,6 +17,8 @@ from .dependencies import get_current_user, get_db, get_token
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="From Fat To Fit API", version="0.1.0")
+
+logger = logging.getLogger(__name__)
 
 app.add_middleware(
     CORSMiddleware,
@@ -195,3 +199,92 @@ def logout(
             db.delete(session)
     response.delete_cookie("session_token")
     return response
+
+
+@app.get("/foods/search", response_model=schemas.FoodSearchResponse)
+def search_foods(
+    query: str,
+    limit: int = 10,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    normalized_query = query.strip()
+    if len(normalized_query) < 2:
+        return schemas.FoodSearchResponse(query=normalized_query, results=[])
+
+    limit = max(1, min(limit, 25))
+    cached_items: List[models.FoodItem] = (
+        db.query(models.FoodItem)
+        .filter(
+            or_(
+                models.FoodItem.name.ilike(f"%{normalized_query}%"),
+                models.FoodItem.brand_name.ilike(f"%{normalized_query}%"),
+            )
+        )
+        .filter(
+            or_(
+                models.FoodItem.created_by_user_id.is_(None),
+                models.FoodItem.created_by_user_id == current_user.id,
+            )
+        )
+        .order_by(models.FoodItem.search_count.desc(), models.FoodItem.updated_at.desc())
+        .limit(limit)
+        .all()
+    )
+    for item in cached_items:
+        item.search_count += 1
+
+    return schemas.FoodSearchResponse(query=normalized_query, results=cached_items[:limit])
+
+
+@app.post("/foods", response_model=schemas.FoodItemOut, status_code=status.HTTP_201_CREATED)
+def create_food_item(
+    food_in: schemas.FoodItemCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    name = food_in.name.strip()
+    if not name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Food name is required")
+
+    def _clean(value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip()
+        return cleaned or None
+
+    brand_name = _clean(food_in.brand_name)
+    serving_description = _clean(food_in.serving_description)
+
+    existing = (
+        db.query(models.FoodItem)
+        .filter(
+            models.FoodItem.provider == "local",
+            models.FoodItem.created_by_user_id == current_user.id,
+            models.FoodItem.name.ilike(name),
+            (models.FoodItem.brand_name == brand_name),
+            (models.FoodItem.serving_description == serving_description),
+        )
+        .first()
+    )
+
+    target = existing or models.FoodItem(
+        provider="local",
+        provider_food_id=str(uuid.uuid4()),
+        created_by_user=current_user,
+    )
+
+    target.name = name
+    target.brand_name = brand_name
+    target.serving_description = serving_description
+    target.calories = food_in.calories
+    target.protein = food_in.protein
+    target.carbs = food_in.carbs
+    target.fat = food_in.fat
+    target.last_refreshed = dt.datetime.utcnow()
+
+    if existing is None:
+        db.add(target)
+
+    db.flush()
+    return target

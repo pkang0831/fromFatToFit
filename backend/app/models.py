@@ -84,6 +84,35 @@ class FoodEntry(Base):
     meal_item = relationship("MealItem", back_populates="food_entries")
 
 
+class FoodItem(Base):
+    __tablename__ = "food_items"
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_food_id", name="uq_food_provider_id"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    provider = Column(String(50), nullable=False, default="local")
+    provider_food_id = Column(String(100), nullable=False, default=lambda: str(uuid.uuid4()))
+    name = Column(String(255), nullable=False)
+    brand_name = Column(String(255), nullable=True)
+    serving_description = Column(String(255), nullable=True)
+    calories = Column(Float, nullable=True)
+    protein = Column(Float, nullable=True)
+    carbs = Column(Float, nullable=True)
+    fat = Column(Float, nullable=True)
+    search_count = Column(Integer, nullable=False, default=0)
+    created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by_user = relationship("User")
+    last_refreshed = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=dt.datetime.utcnow,
+        onupdate=dt.datetime.utcnow,
+        nullable=False,
+    )
+
+
 class DailySummary(Base):
     __tablename__ = "daily_summaries"
     __table_args__ = (UniqueConstraint("user_id", "date", name="uq_summary_user_date"),)

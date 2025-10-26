@@ -99,3 +99,33 @@ class DashboardResponse(BaseModel):
     user: UserOut
     meals: List[MealOut]
     summary: DailySummaryOut
+
+
+class FoodItemBase(BaseModel):
+    name: str
+    brand_name: Optional[str] = None
+    serving_description: Optional[str] = None
+    calories: Optional[float] = None
+    protein: Optional[float] = None
+    carbs: Optional[float] = None
+    fat: Optional[float] = None
+
+
+class FoodItemCreate(FoodItemBase):
+    calories: float = Field(gt=0)
+
+
+class FoodItemOut(FoodItemBase):
+    id: int
+    provider: str
+    provider_food_id: str
+    created_by_user_id: Optional[int] = None
+    last_refreshed: Optional[dt.datetime]
+
+    class Config:
+        orm_mode = True
+
+
+class FoodSearchResponse(BaseModel):
+    query: str
+    results: List[FoodItemOut]
