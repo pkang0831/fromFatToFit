@@ -60,40 +60,46 @@ export default function Page() {
 
   if (!dashboard) {
     return (
-      <section className="card" style={{ maxWidth: "420px", margin: "80px auto" }}>
-        <h1 style={{ fontSize: "2rem", fontWeight: 700, marginBottom: "4px" }}>From Fat To Fit</h1>
-        <p className="text-muted">
-          {authMode === "login" ? "Sign in to view your dashboard" : "Create an account to start tracking"}
-        </p>
-        <form className="card" style={{ boxShadow: "none", border: "none", padding: 0, marginTop: "24px" }} onSubmit={handleAuth}>
-          <div style={{ marginBottom: "16px" }}>
-            <label className="label">Email</label>
-            <input name="email" type="email" required className="input" placeholder="you@example.com" />
-          </div>
-          <div style={{ marginBottom: "16px" }}>
-            <label className="label">Password</label>
-            <input name="password" type="password" required minLength={6} className="input" />
-          </div>
-          {authMode === "register" && (
-            <div style={{ marginBottom: "16px" }}>
-              <label className="label">Daily calorie target</label>
-              <input name="target" type="number" min={1000} max={10000} defaultValue={2000} className="input" />
-            </div>
-          )}
-          <button type="submit" className="button-primary" style={{ width: "100%", marginTop: "8px" }}>
-            {authMode === "login" ? "Sign in" : "Create account"}
-          </button>
-        </form>
-        {error && <p className="error-text">{error}</p>}
-        <p className="text-small" style={{ textAlign: "center", marginTop: "24px" }}>
-          {authMode === "login" ? "Don't have an account?" : "Already registered?"}{" "}
-          <button
-            onClick={() => setAuthMode((mode) => (mode === "login" ? "register" : "login"))}
-            style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontWeight: 600 }}
-          >
-            {authMode === "login" ? "Create one" : "Sign in"}
-          </button>
-        </p>
+      <section className="auth-page">
+        <div className="auth-backdrop" />
+        <div className="auth-card">
+          <header className="auth-card__header">
+            <h1 className="auth-title">From Fat To Fit</h1>
+            <p className="auth-subtitle">
+              {authMode === "login" ? "Sign in to view your dashboard" : "Create an account to start tracking"}
+            </p>
+          </header>
+          <form className="auth-form" onSubmit={handleAuth}>
+            <label className="auth-label">
+              Email
+              <input name="email" type="email" required className="auth-input" placeholder="you@example.com" />
+            </label>
+            <label className="auth-label">
+              Password
+              <input name="password" type="password" required minLength={6} className="auth-input" />
+            </label>
+            {authMode === "register" && (
+              <label className="auth-label">
+                Daily calorie target
+                <input name="target" type="number" min={1000} max={10000} defaultValue={2000} className="auth-input" />
+              </label>
+            )}
+            <button type="submit" className="auth-button">
+              {authMode === "login" ? "Sign in" : "Create account"}
+            </button>
+          </form>
+          {error && <p className="error-text" style={{ textAlign: "center" }}>{error}</p>}
+          <p className="auth-switcher">
+            {authMode === "login" ? "Don't have an account?" : "Already registered?"}{" "}
+            <button
+              onClick={() => setAuthMode((mode) => (mode === "login" ? "register" : "login"))}
+              className="auth-toggle"
+              type="button"
+            >
+              {authMode === "login" ? "Create one" : "Sign in"}
+            </button>
+          </p>
+        </div>
       </section>
     );
   }
