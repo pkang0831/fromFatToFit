@@ -7,6 +7,7 @@ A minimal full-stack starter that combines a FastAPI backend with a Next.js fron
 - **User authentication** with email/password plus persistent session tokens stored in the database.
 - **Nutrition schema** covering users, meals, meal items, detailed food entries, and daily summaries with generated motivation messages.
 - **Daily dashboard** that displays today's meals, running calorie and macro totals, and tailored coaching blurbs.
+- **Local food library** so you can build and search your own catalogue without relying on external APIs.
 
 ## Project structure
 
@@ -81,6 +82,44 @@ fromFatToFit/
 - `POST /meals` – Log a meal with one or more items and nutrition details.
 - `GET /dashboard` – Fetch today's meals and the computed daily summary, including motivation messaging.
 - `GET /summaries/{date}` – Retrieve a summary for any recorded day (recomputed on demand).
+- `GET /foods/search` – Search the local food library (scoped to the authenticated user plus shared foods).
+- `POST /foods` – Save or update a food entry in your personal library.
+
+## Building your own food database
+
+The backend ships with a lightweight local catalogue so you can store foods without calling third-party APIs. Every saved item is searchable through the autocomplete in the meal form.
+
+You can seed the library with the bundled sample dataset:
+
+```bash
+cd backend
+python -m app.scripts.import_foods app/data/sample_foods.json
+```
+
+Or import your own CSV/JSON file (fields: `name`, `brand_name`, `serving_description`, `calories`, `protein`, `carbs`, `fat`):
+
+```bash
+python -m app.scripts.import_foods path/to/foods.csv
+```
+
+Pass `--user-id <id>` to associate the entries with a specific user so they're private to that account; omit the flag for shared items.
+
+### Downloading foods from USDA FoodData Central
+
+If you have a USDA FoodData Central API key, you can fetch their catalogue directly:
+
+```bash
+python -m app.scripts.download_usda_foods --api-key <your-key> --output foods.jsonl
+```
+
+The command above streams newline-delimited JSON to `foods.jsonl`. Add `--pretty` to emit a standard JSON array that can be imported with the `import_foods` script:
+
+```bash
+python -m app.scripts.download_usda_foods --api-key <your-key> --pretty --output foods.json
+python -m app.scripts.import_foods foods.json
+```
+
+Use flags such as `--data-type`, `--start-page`, and `--max-pages` to control which portions of the FoodData Central catalogue you download.
 
 ## Daily summary logic
 
