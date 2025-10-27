@@ -1,5 +1,9 @@
+"use client";
+
+import { useCallback, useMemo, useRef, useState } from "react";
+
 import MealForm from "@/components/MealForm";
-import { DashboardData } from "@/lib/api";
+import { DashboardData, deleteMeal } from "@/lib/api";
 
 interface TemplateOneProps {
   data: DashboardData;
@@ -66,32 +70,31 @@ function buildCalendar(dateInput: string) {
 
 type MacroTotals = { calories: number; protein: number; carbs: number; fat: number };
 
-function getRecentMealItems(data: DashboardData) {
-  const items = data.meals.flatMap((meal) =>
-    meal.items.map((item) => {
-      const aggregate = item.food_entries.reduce<MacroTotals>(
-        (acc, entry) => ({
-          calories: acc.calories + entry.calories,
-          protein: acc.protein + (entry.protein ?? 0),
-          carbs: acc.carbs + (entry.carbs ?? 0),
-          fat: acc.fat + (entry.fat ?? 0)
-        }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0 }
-      );
-
-      return {
-        id: item.id,
-        name: item.name,
-        mealName: meal.name,
-        calories: aggregate.calories,
-        protein: aggregate.protein,
-        carbs: aggregate.carbs,
-        fat: aggregate.fat
-      };
-    })
+function getItemTotals(item: DashboardData["meals"][number]["items"][number]): MacroTotals {
+  return item.food_entries.reduce<MacroTotals>(
+    (acc, entry) => ({
+      calories: acc.calories + entry.calories,
+      protein: acc.protein + (entry.protein ?? 0),
+      carbs: acc.carbs + (entry.carbs ?? 0),
+      fat: acc.fat + (entry.fat ?? 0)
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
+}
 
-  return items.sort((a, b) => b.calories - a.calories).slice(0, 5);
+function getMealTotals(meal: DashboardData["meals"][number]): MacroTotals {
+  return meal.items.reduce<MacroTotals>(
+    (acc, item) => {
+      const totals = getItemTotals(item);
+      return {
+        calories: acc.calories + totals.calories,
+        protein: acc.protein + totals.protein,
+        carbs: acc.carbs + totals.carbs,
+        fat: acc.fat + totals.fat
+      };
+    },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  );
 }
 
 function generateSparkline(values: number[]) {
@@ -129,7 +132,24 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
   const { summary, user } = data;
   const macroPercentages = getMacroPercentages(summary);
   const calendar = buildCalendar(summary.date);
-  const recentItems = getRecentMealItems(data);
+
+  const [isMealFormOpen, setIsMealFormOpen] = useState(false);
+  const [deletingMealId, setDeletingMealId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const formContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const mealsByDate = useMemo(
+    () =>
+      [...data.meals].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      ),
+    [data.meals]
+  );
+
+  const totalMealItems = useMemo(
+    () => mealsByDate.reduce((acc, meal) => acc + meal.items.length, 0),
+    [mealsByDate]
+  );
 
   const calorieTarget = user.daily_calorie_target;
   const calorieProgressRaw =
@@ -144,11 +164,49 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
     Math.max(35, calorieProgress - 10)
   ];
 
+  const toggleMealForm = useCallback(() => {
+    setIsMealFormOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        requestAnimationFrame(() => {
+          formContainerRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        });
+      }
+      return next;
+    });
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setActionError(null);
+    await onRefresh();
+  }, [onRefresh]);
+
+  const handleDeleteMeal = useCallback(
+    async (mealId: number) => {
+      setActionError(null);
+      setDeletingMealId(mealId);
+      try {
+        await deleteMeal(mealId);
+        await onRefresh();
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "Unable to remove meal.");
+      } finally {
+        setDeletingMealId(null);
+      }
+    },
+    [onRefresh]
+  );
+
+  const nextMealLabel = `Meal ${mealsByDate.length + 1}`;
+
   return (
     <div className="template-one">
       <div className="template-one__grid">
         <section className="template-one__card template-one__summary" aria-labelledby="summary-heading">
-          <header className="template-one__card-header">
+          <header className="template-one__card-header template-one__summary-header">
             <div className="template-one__summary-heading">
               <div className="template-one__fat-loss">
                 <span className="template-one__fat-loss-label">Today's total fat loss</span>
@@ -156,7 +214,7 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
                   {formatNumber(summary.total_fat, 1)} g
                 </strong>
               </div>
-              <div>
+              <div className="template-one__summary-title">
                 <p className="template-one__eyebrow">Daily nutrition summary</p>
                 <h2 id="summary-heading">{calendar.monthLabel}</h2>
               </div>
@@ -220,43 +278,6 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
               </dl>
             </div>
           </div>
-
-          <div className="template-one__table">
-            <header>
-              <h3>Logged foods</h3>
-              <button className="template-one__refresh" type="button" onClick={onRefresh}>
-                Refresh
-              </button>
-            </header>
-            {recentItems.length === 0 ? (
-              <p className="template-one__empty">No foods logged yet.</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Food</th>
-                    <th scope="col">Meal</th>
-                    <th scope="col">Calories</th>
-                    <th scope="col">Carbs</th>
-                    <th scope="col">Protein</th>
-                    <th scope="col">Fat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentItems.map((item) => (
-                    <tr key={item.id}>
-                      <th scope="row">{item.name}</th>
-                      <td>{item.mealName}</td>
-                      <td>{formatNumber(item.calories)}</td>
-                      <td>{formatNumber(item.carbs, 1)} g</td>
-                      <td>{formatNumber(item.protein, 1)} g</td>
-                      <td>{formatNumber(item.fat, 1)} g</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
         </section>
 
         <section className="template-one__card template-one__progress" aria-labelledby="progress-heading">
@@ -284,13 +305,13 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
             </li>
             <li>
               <span className="template-one__progress-label">Meals logged</span>
-              <strong>{data.meals.length}</strong>
+              <strong>{mealsByDate.length}</strong>
               <span className="template-one__progress-meta">today</span>
             </li>
             <li>
-              <span className="template-one__progress-label">Foods</span>
-              <strong>{recentItems.length}</strong>
-              <span className="template-one__progress-meta">top entries</span>
+              <span className="template-one__progress-label">Foods logged</span>
+              <strong>{totalMealItems}</strong>
+              <span className="template-one__progress-meta">across meals</span>
             </li>
           </ul>
 
@@ -326,54 +347,153 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
         </section>
       </div>
 
-      <section className="template-one__card template-one__form" aria-labelledby="log-meal-heading">
-        <header className="template-one__card-header">
-          <p className="template-one__eyebrow">Log meal</p>
-          <h2 id="log-meal-heading">Add new entry</h2>
+      <section className="template-one__card template-one__foods" aria-labelledby="logged-foods-heading">
+        <header className="template-one__card-header template-one__foods-header">
+          <div>
+            <p className="template-one__eyebrow">Logged foods</p>
+            <h2 id="logged-foods-heading">Today's meals</h2>
+          </div>
+          <div className="template-one__actions">
+            <button type="button" className="template-one__action-button" onClick={toggleMealForm}>
+              {isMealFormOpen ? "Close form" : "Add meal"}
+            </button>
+            <button
+              type="button"
+              className="template-one__action-button template-one__action-button--refresh"
+              onClick={handleRefresh}
+            >
+              Refresh
+            </button>
+          </div>
         </header>
-        <MealForm onLogged={onRefresh} />
+        {actionError && <p className="template-one__error">{actionError}</p>}
+
+        {mealsByDate.length === 0 ? (
+          <p className="template-one__empty">No meals logged yet. Start by adding one.</p>
+        ) : (
+          <div className="template-one__meal-grid">
+            {mealsByDate.map((meal, index) => {
+              const totals = getMealTotals(meal);
+              const mealName = meal.name.trim();
+              return (
+                <article key={meal.id} className="template-one__meal-card">
+                  <header className="template-one__meal-card-header">
+                    <div className="template-one__meal-heading">
+                      <h3>{`Meal ${index + 1}`}</h3>
+                      {mealName && <span className="template-one__meal-subtitle">{mealName}</span>}
+                    </div>
+                    <div className="template-one__meal-meta">
+                      <time dateTime={toISODate(meal.date)}>{formatTime(meal.date)}</time>
+                      <button
+                        type="button"
+                        className="template-one__meal-remove"
+                        onClick={() => handleDeleteMeal(meal.id)}
+                        disabled={deletingMealId === meal.id}
+                      >
+                        {deletingMealId === meal.id ? "Removing..." : "Remove"}
+                      </button>
+                    </div>
+                  </header>
+                  <p className="template-one__meal-macros">
+                    <span>{formatNumber(totals.calories)} kcal</span>
+                    <span>
+                      P {formatNumber(totals.protein, 1)} • C {formatNumber(totals.carbs, 1)} • F {formatNumber(totals.fat, 1)}
+                    </span>
+                  </p>
+                  {meal.items.length === 0 ? (
+                    <p className="template-one__empty template-one__meal-empty">No foods logged yet.</p>
+                  ) : (
+                    <ul className="template-one__meal-items">
+                      {meal.items.map((item) => {
+                        const itemTotals = getItemTotals(item);
+                        return (
+                          <li key={item.id}>
+                            <div className="template-one__meal-item-details">
+                              <p>{item.name}</p>
+                              <div className="template-one__meal-item-meta">
+                                {item.quantity && <span>{item.quantity}</span>}
+                                {item.notes && <span>{item.notes}</span>}
+                              </div>
+                            </div>
+                            <div className="template-one__meal-item-macros">
+                              <strong>{formatNumber(itemTotals.calories)} kcal</strong>
+                              <span>
+                                P {formatNumber(itemTotals.protein, 1)} • C {formatNumber(itemTotals.carbs, 1)} • F {formatNumber(itemTotals.fat, 1)}
+                              </span>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+
+        <div ref={formContainerRef} className="template-one__meal-form">
+          {isMealFormOpen && (
+            <MealForm
+              onLogged={async () => {
+                await onRefresh();
+                setIsMealFormOpen(false);
+              }}
+              initialMealName={nextMealLabel}
+            />
+          )}
+        </div>
       </section>
 
-      <section className="template-one__card template-one__meals" aria-labelledby="meals-heading">
+      <section className="template-one__card template-one__timeline-section" aria-labelledby="meals-heading">
         <header className="template-one__card-header">
           <p className="template-one__eyebrow">Today</p>
           <h2 id="meals-heading">Meal timeline</h2>
         </header>
 
-        {data.meals.length === 0 ? (
+        {mealsByDate.length === 0 ? (
           <p className="template-one__empty">No meals logged yet. Start by adding one above.</p>
         ) : (
           <ol className="template-one__timeline">
-            {data.meals.map((meal) => (
-              <li key={meal.id}>
-                <div className="template-one__timeline-point" />
-                <div className="template-one__timeline-card">
-                  <header>
-                    <h3>{meal.name}</h3>
-                    <time dateTime={toISODate(meal.date)}>{formatTime(meal.date)}</time>
-                  </header>
-                  <ul>
-                    {meal.items.map((item) => (
-                      <li key={item.id}>
-                        <div>
-                          <p>{item.name}</p>
-                          {item.quantity && <span>{item.quantity}</span>}
-                          {item.notes && <span>{item.notes}</span>}
-                        </div>
-                        {item.food_entries.map((entry, idx) => (
-                          <aside key={idx}>
-                            <strong>{Math.round(entry.calories)} kcal</strong>
-                            <span>
-                              P {entry.protein?.toFixed(1) ?? 0} • C {entry.carbs?.toFixed(1) ?? 0} • F {entry.fat?.toFixed(1) ?? 0}
-                            </span>
-                          </aside>
-                        ))}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </li>
-            ))}
+            {mealsByDate.map((meal, index) => {
+              const mealName = meal.name.trim();
+              return (
+                <li key={meal.id}>
+                  <div className="template-one__timeline-point" />
+                  <div className="template-one__timeline-card">
+                    <header>
+                      <h3>{`Meal ${index + 1}`}</h3>
+                      <div className="template-one__timeline-meta">
+                        <time dateTime={toISODate(meal.date)}>{formatTime(meal.date)}</time>
+                        {mealName && <span>{mealName}</span>}
+                      </div>
+                    </header>
+                    <ul>
+                      {meal.items.map((item) => {
+                        const itemTotals = getItemTotals(item);
+                        return (
+                          <li key={item.id}>
+                            <div>
+                              <p>{item.name}</p>
+                              <div className="template-one__timeline-item-meta">
+                                {item.quantity && <span>{item.quantity}</span>}
+                                {item.notes && <span>{item.notes}</span>}
+                              </div>
+                            </div>
+                            <aside>
+                              <strong>{formatNumber(itemTotals.calories)} kcal</strong>
+                              <span>
+                                P {formatNumber(itemTotals.protein, 1)} • C {formatNumber(itemTotals.carbs, 1)} • F {formatNumber(itemTotals.fat, 1)}
+                              </span>
+                            </aside>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </li>
+              );
+            })}
           </ol>
         )}
       </section>

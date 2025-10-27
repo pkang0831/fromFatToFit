@@ -136,6 +136,12 @@ export async function logMeal(name: string, items: MealItemInput[]): Promise<voi
   });
 }
 
+export async function deleteMeal(mealId: number): Promise<void> {
+  await request(`/meals/${mealId}`, {
+    method: "DELETE"
+  });
+}
+
 export async function searchFoods(query: string, limit = 10): Promise<FoodSuggestion[]> {
   const params = new URLSearchParams({ query, limit: String(limit) });
   const response = await request<{ query: string; results: FoodSuggestion[] }>(

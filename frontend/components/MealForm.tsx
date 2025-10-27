@@ -4,6 +4,11 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { FoodSuggestion, MealItemInput, createFoodItem, logMeal, searchFoods } from "@/lib/api";
 
+interface MealFormProps {
+  onLogged: () => Promise<void> | void;
+  initialMealName?: string;
+}
+
 const emptyItem: MealItemInput = {
   name: "",
   brand_name: "",
@@ -20,8 +25,8 @@ type SaveState = {
   message?: string;
 };
 
-export default function MealForm({ onLogged }: { onLogged: () => Promise<void> | void }) {
-  const [mealName, setMealName] = useState("Breakfast");
+export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealFormProps) {
+  const [mealName, setMealName] = useState(initialMealName);
   const [items, setItems] = useState<MealItemInput[]>([{ ...emptyItem }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +154,10 @@ export default function MealForm({ onLogged }: { onLogged: () => Promise<void> |
   };
 
   useEffect(() => {
+    setMealName(initialMealName);
+  }, [initialMealName]);
+
+  useEffect(() => {
     return () => {
       Object.values(searchTimers.current).forEach((timer) => clearTimeout(timer));
     };
@@ -252,6 +261,7 @@ export default function MealForm({ onLogged }: { onLogged: () => Promise<void> |
       setIsSearching({});
       setSaveStates({});
       await onLogged();
+      setMealName(initialMealName);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to log meal");
     } finally {
