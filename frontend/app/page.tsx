@@ -2,7 +2,9 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
-import MealForm from "@/components/MealForm";
+import TemplateOne from "@/components/dashboard/TemplateOne";
+import TemplateThree from "@/components/dashboard/TemplateThree";
+import TemplateTwo from "@/components/dashboard/TemplateTwo";
 import { DashboardData, getDashboard, login, register } from "@/lib/api";
 
 export default function Page() {
@@ -10,6 +12,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [selectedTemplate, setSelectedTemplate] = useState<"template1" | "template2" | "template3">("template1");
 
   useEffect(() => {
     (async () => {
@@ -104,71 +107,49 @@ export default function Page() {
     );
   }
 
-  const totals = dashboard.summary;
+  const renderDashboard = () => {
+    switch (selectedTemplate) {
+      case "template2":
+        return <TemplateTwo data={dashboard} onRefresh={refreshDashboard} />;
+      case "template3":
+        return <TemplateThree data={dashboard} onRefresh={refreshDashboard} />;
+      default:
+        return <TemplateOne data={dashboard} onRefresh={refreshDashboard} />;
+    }
+  };
 
   return (
-    <div className="container">
-      <section style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <header className="card">
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px" }}>
-            <div>
-              <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: 0 }}>Welcome back, {dashboard.user.email}</h1>
-              <p className="text-muted">Stay consistent—log meals as you go today.</p>
-            </div>
-            <span className="badge">Target {dashboard.user.daily_calorie_target} kcal</span>
-          </div>
-          <div className="success-banner" style={{ marginTop: "16px" }}>
-            <p style={{ margin: 0, fontWeight: 600 }}>{totals.motivation_message}</p>
-            <p className="text-small" style={{ marginTop: "8px" }}>
-              Today's intake: {totals.total_calories.toFixed(0)} kcal • Protein {totals.total_protein.toFixed(1)} g • Carbs {totals.total_carbs.toFixed(1)} g • Fat {totals.total_fat.toFixed(1)} g
-            </p>
-          </div>
-        </header>
-
-        <MealForm onLogged={refreshDashboard} />
-
-        <section>
-          <h2 className="section-title">Today's meals</h2>
-          {dashboard.meals.length === 0 ? (
-            <div className="subtle-card">No meals logged yet. Start by adding one above!</div>
-          ) : (
-            dashboard.meals.map((meal) => (
-              <article key={meal.id} className="card">
-                <h3 style={{ marginTop: 0, fontSize: "1.25rem", fontWeight: 600 }}>{meal.name}</h3>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                  {meal.items.map((item) => (
-                    <li key={item.id} className="meal-item">
-                      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px" }}>
-                        <div>
-                          <p style={{ margin: 0, fontWeight: 600 }}>{item.name}</p>
-                          {item.quantity && (
-                            <p className="text-small" style={{ margin: "4px 0 0" }}>
-                              {item.quantity}
-                            </p>
-                          )}
-                          {item.notes && (
-                            <p className="text-small" style={{ margin: "4px 0 0" }}>
-                              {item.notes}
-                            </p>
-                          )}
-                        </div>
-                        {item.food_entries.map((entry, idx) => (
-                          <div key={idx} className="text-small" style={{ textAlign: "right" }}>
-                            <p style={{ margin: 0, fontWeight: 600 }}>{entry.calories.toFixed(0)} kcal</p>
-                            <p style={{ margin: "4px 0 0" }}>
-                              P {entry.protein?.toFixed(1) ?? 0} g • C {entry.carbs?.toFixed(1) ?? 0} g • F {entry.fat?.toFixed(1) ?? 0} g
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))
-          )}
-        </section>
-      </section>
+    <div className="dashboard-shell">
+      <div className="template-selector" role="tablist" aria-label="Dashboard templates">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={selectedTemplate === "template1"}
+          className={`template-selector__button${selectedTemplate === "template1" ? " template-selector__button--active" : ""}`}
+          onClick={() => setSelectedTemplate("template1")}
+        >
+          Template 1
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={selectedTemplate === "template2"}
+          className={`template-selector__button${selectedTemplate === "template2" ? " template-selector__button--active" : ""}`}
+          onClick={() => setSelectedTemplate("template2")}
+        >
+          Template 2
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={selectedTemplate === "template3"}
+          className={`template-selector__button${selectedTemplate === "template3" ? " template-selector__button--active" : ""}`}
+          onClick={() => setSelectedTemplate("template3")}
+        >
+          Template 3
+        </button>
+      </div>
+      {renderDashboard()}
     </div>
   );
 }
