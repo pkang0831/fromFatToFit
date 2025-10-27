@@ -149,9 +149,17 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
       <div className="template-one__grid">
         <section className="template-one__card template-one__summary" aria-labelledby="summary-heading">
           <header className="template-one__card-header">
-            <div>
-              <p className="template-one__eyebrow">Daily nutrition summary</p>
-              <h2 id="summary-heading">{calendar.monthLabel}</h2>
+            <div className="template-one__summary-heading">
+              <div className="template-one__fat-loss">
+                <span className="template-one__fat-loss-label">Today's total fat loss</span>
+                <strong className="template-one__fat-loss-value">
+                  {formatNumber(summary.total_fat, 1)} g
+                </strong>
+              </div>
+              <div>
+                <p className="template-one__eyebrow">Daily nutrition summary</p>
+                <h2 id="summary-heading">{calendar.monthLabel}</h2>
+              </div>
             </div>
             <span className="template-one__badge">Target {formatNumber(calorieTarget)} kcal</span>
           </header>

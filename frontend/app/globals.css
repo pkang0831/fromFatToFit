@@ -387,13 +387,16 @@ a {
 .template-selector {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 999px;
-  padding: 6px;
+  padding: 8px 12px;
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-  align-self: center;
+  align-self: flex-start;
+  position: sticky;
+  top: 32px;
+  z-index: 20;
 }
 
 .template-selector__button {
@@ -444,6 +447,41 @@ a {
   display: flex;
   flex-direction: column;
   gap: 28px;
+}
+
+.template-one__summary-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.template-one__fat-loss {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  background: rgba(134, 163, 97, 0.12);
+  border-radius: 16px;
+  padding: 10px 14px;
+  color: #3b4a29;
+  box-shadow: inset 0 0 0 1px rgba(134, 163, 97, 0.2);
+}
+
+.template-one__fat-loss-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.template-one__fat-loss-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: inherit;
+  line-height: 1.2;
 }
 
 .template-one__progress {
@@ -1081,6 +1119,7 @@ a {
   }
 
   .template-selector {
+    top: 20px;
     flex-wrap: wrap;
     gap: 8px;
   }
