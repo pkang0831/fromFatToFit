@@ -17,15 +17,16 @@ body {
   align-items: center;
   justify-content: center;
   padding: 48px 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(226, 232, 240, 0.6)),
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.45), rgba(226, 232, 240, 0.2)),
     url("https://images.unsplash.com/photo-1468413253725-0d5181091126?auto=format&fit=crop&w=1600&q=80") center / cover
       no-repeat fixed;
+  background-color: #0b1220;
 }
 
 .auth-backdrop {
   position: absolute;
   inset: 0;
-  background: linear-gradient(160deg, rgba(241, 245, 249, 0.65), rgba(148, 163, 184, 0.35));
+  background: linear-gradient(160deg, rgba(241, 245, 249, 0.4), rgba(148, 163, 184, 0.2));
   backdrop-filter: blur(6px);
   z-index: 0;
 }
