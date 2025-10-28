@@ -1089,11 +1089,17 @@ a {
   background: #ffffff;
   border-radius: 28px;
   box-shadow: 0 40px 60px rgba(15, 23, 42, 0.3);
-  width: min(880px, 92vw);
-  padding: 28px 32px 32px;
+  width: min(1200px, 92vw);
+  min-width: min(60vw, 92vw);
+  max-height: min(90vh, 760px);
+  padding: 32px 40px 40px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
+}
+
+.trend-chart__modal-content .trend-chart__canvas {
+  min-height: 320px;
 }
 
 .trend-chart__modal-header {
