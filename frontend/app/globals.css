@@ -1115,6 +1115,12 @@ a {
   flex: 1;
 }
 
+@media (min-width: 1200px) {
+  .trend-chart__modal-content {
+    width: min(1120px, 60vw);
+  }
+}
+
 .trend-chart__modal-header {
   display: flex;
   justify-content: space-between;
