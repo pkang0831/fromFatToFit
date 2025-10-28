@@ -156,6 +156,35 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
     calorieTarget > 0 ? (summary.total_calories / calorieTarget) * 100 : 0;
   const calorieProgress = Math.min(100, Math.max(0, calorieProgressRaw));
 
+  const calorieBalance = useMemo(() => {
+    if (calorieTarget <= 0) return null;
+    return calorieTarget - summary.total_calories;
+  }, [calorieTarget, summary.total_calories]);
+
+  const calorieInsight = useMemo(() => {
+    const logged = formatNumber(summary.total_calories);
+
+    if (calorieBalance == null) {
+      return `You've logged ${logged} kcal today.`;
+    }
+
+    if (calorieBalance > 0) {
+      const deficit = formatNumber(calorieBalance);
+      return `Nice calorie deficit! You're about ${deficit} kcal under your goal with ${logged} kcal logged.`;
+    }
+
+    if (calorieBalance < 0) {
+      const surplus = formatNumber(Math.abs(calorieBalance));
+      return `You've gone over by ${surplus} kcal today. Take a light walk or choose lean proteins for dinner.`;
+    }
+
+    return `Perfect balance — you've matched your ${formatNumber(calorieTarget)} kcal target.`;
+  }, [calorieBalance, calorieTarget, summary.total_calories]);
+
+  const energyCue = summary.motivation_message ?? "Fuel up with quality foods to keep energy high.";
+
+  const fatLossNote = summary.total_fat > 0 ? "이번 주 페이스를 유지하고 있어요." : "오늘은 아직 감량 데이터가 없어요.";
+
   const sparklineValues = [
     Math.max(40, calorieProgress - 8),
     Math.max(45, calorieProgress - 4),
@@ -206,20 +235,24 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
     <div className="template-one">
       <div className="template-one__grid">
         <section className="template-one__card template-one__summary" aria-labelledby="summary-heading">
-          <header className="template-one__card-header template-one__summary-header">
+          <header className="template-one__summary-header">
             <div className="template-one__summary-heading">
               <div className="template-one__fat-loss">
                 <span className="template-one__fat-loss-label">Today's total fat loss</span>
                 <strong className="template-one__fat-loss-value">
                   {formatNumber(summary.total_fat, 1)} g
                 </strong>
+                <p className="template-one__fat-loss-note">{fatLossNote}</p>
               </div>
               <div className="template-one__summary-title">
                 <p className="template-one__eyebrow">Daily nutrition summary</p>
                 <h2 id="summary-heading">{calendar.monthLabel}</h2>
               </div>
             </div>
-            <span className="template-one__badge">Target {formatNumber(calorieTarget)} kcal</span>
+            <div className="template-one__summary-target">
+              <span className="template-one__badge">Target {formatNumber(calorieTarget)} kcal</span>
+              <p className="template-one__summary-insight">{calorieInsight}</p>
+            </div>
           </header>
 
           <div className="template-one__summary-content">
@@ -254,7 +287,7 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
             </div>
 
             <div className="template-one__totals">
-              <p className="template-one__motivation">{summary.motivation_message ?? "Keep it going—consistency wins."}</p>
+              <p className="template-one__motivation">{energyCue}</p>
               <dl className="template-one__metrics">
                 <div>
                   <dt>Calories</dt>
