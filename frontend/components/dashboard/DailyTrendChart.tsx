@@ -33,9 +33,9 @@ const DEFAULT_DIMENSIONS = {
 };
 
 const MODAL_DIMENSIONS = {
-  width: 860,
-  height: 360,
-  margin: { top: 36, right: 36, bottom: 64, left: 80 }
+  width: 1040,
+  height: 380,
+  margin: { top: 40, right: 40, bottom: 72, left: 88 }
 };
 
 function formatThousands(value: number) {
