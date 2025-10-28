@@ -33,9 +33,9 @@ const DEFAULT_DIMENSIONS = {
 };
 
 const MODAL_DIMENSIONS = {
-  width: 1040,
-  height: 380,
-  margin: { top: 40, right: 40, bottom: 72, left: 88 }
+  width: 1360,
+  height: 520,
+  margin: { top: 56, right: 64, bottom: 88, left: 112 }
 };
 
 function formatThousands(value: number) {
@@ -321,19 +321,21 @@ export default function DailyTrendChart({ data, extendedData, formatLabel }: Dai
                 Close
               </button>
             </header>
-            {modalGeometry.points.length ? (
-              <ChartCanvas
-                geometry={modalGeometry}
-                hoverIndex={modalHoverIndex}
-                onHoverIndexChange={setModalHoverIndex}
-                ariaLabel="Daily calorie trend for the last fourteen days"
-                interactive={false}
-              />
-            ) : (
-              <div className="trend-chart__empty trend-chart__empty--modal">
-                Not enough entries to display the last fourteen days.
-              </div>
-            )}
+            <div className="trend-chart__modal-body">
+              {modalGeometry.points.length ? (
+                <ChartCanvas
+                  geometry={modalGeometry}
+                  hoverIndex={modalHoverIndex}
+                  onHoverIndexChange={setModalHoverIndex}
+                  ariaLabel="Daily calorie trend for the last fourteen days"
+                  interactive={false}
+                />
+              ) : (
+                <div className="trend-chart__empty trend-chart__empty--modal">
+                  Not enough entries to display the last fourteen days.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
