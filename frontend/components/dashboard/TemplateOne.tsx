@@ -397,7 +397,7 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
               </div>
             </div>
           </header>
-
+          <p className="template-one__motivation">{energyCue}</p>
           <div className="template-one__summary-content">
             <div className="template-one__pie">
               <div
@@ -430,7 +430,7 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
             </div>
 
             <div className="template-one__totals">
-              <p className="template-one__motivation">{energyCue}</p>
+              
               <dl className="template-one__metrics">
                 <div>
                   <dt>Calories</dt>
