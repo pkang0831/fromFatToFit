@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import MealForm from "@/components/MealForm";
 import { DashboardData, deleteMeal } from "@/lib/api";
+import DailyTrendChart, { type TrendDatum } from "@/components/dashboard/DailyTrendChart";
 
 interface TemplateOneProps {
   data: DashboardData;
@@ -30,10 +31,33 @@ function getMacroPercentages(data: DashboardData["summary"]) {
   };
 }
 
+type CalendarDay = { day: number; isToday: boolean; isoDate?: string };
+
+type DateRange = { start: string; end: string };
+
+function getDateKeyFromDate(date: Date) {
+  return date.toLocaleDateString("en-CA");
+}
+
+function getDateKey(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return getDateKeyFromDate(date);
+}
+
+function normalizeRange(start: string, end: string): DateRange {
+  if (start <= end) {
+    return { start, end };
+  }
+  return { start: end, end: start };
+}
+
 function buildCalendar(dateInput: string) {
   const date = new Date(dateInput);
   if (Number.isNaN(date.getTime())) {
-    return { monthLabel: "This Month", weeks: [] as Array<Array<{ day: number; isToday: boolean }>> };
+    return { monthLabel: "This Month", weeks: [] as Array<Array<CalendarDay>> };
   }
 
   const year = date.getFullYear();
@@ -43,15 +67,20 @@ function buildCalendar(dateInput: string) {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const weeks: Array<Array<{ day: number; isToday: boolean }>> = [];
-  let currentWeek: Array<{ day: number; isToday: boolean }> = [];
+  const weeks: Array<Array<CalendarDay>> = [];
+  let currentWeek: Array<CalendarDay> = [];
 
   for (let i = 0; i < firstDay; i += 1) {
     currentWeek.push({ day: 0, isToday: false });
   }
 
   for (let day = 1; day <= daysInMonth; day += 1) {
-    currentWeek.push({ day, isToday: day === date.getDate() });
+    const cellDate = new Date(year, month, day);
+    currentWeek.push({
+      day,
+      isToday: day === date.getDate(),
+      isoDate: getDateKeyFromDate(cellDate)
+    });
     if (currentWeek.length === 7) {
       weeks.push(currentWeek);
       currentWeek = [];
@@ -95,21 +124,6 @@ function getMealTotals(meal: DashboardData["meals"][number]): MacroTotals {
     },
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
-}
-
-function generateSparkline(values: number[]) {
-  if (values.length === 0) return "";
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-
-  return values
-    .map((value, index) => {
-      const x = (index / (values.length - 1)) * 100;
-      const y = 100 - ((value - min) / range) * 100;
-      return `${x},${y}`;
-    })
-    .join(" ");
 }
 
 function formatTime(value: string) {
@@ -185,13 +199,140 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
 
   const fatLossNote = summary.total_fat > 0 ? "이번 주 페이스를 유지하고 있어요." : "오늘은 아직 감량 데이터가 없어요.";
 
-  const sparklineValues = [
-    Math.max(40, calorieProgress - 8),
-    Math.max(45, calorieProgress - 4),
-    calorieProgress,
-    Math.min(100, calorieProgress + 3),
-    Math.max(35, calorieProgress - 10)
-  ];
+  const dailyTrendData = useMemo<TrendDatum[]>(() => {
+    const totals = new Map<string, { calories: number; fat: number }>();
+
+    data.meals.forEach((meal) => {
+      const key = getDateKey(meal.date);
+      if (!key) return;
+      const totalsForMeal = getMealTotals(meal);
+      const existing = totals.get(key);
+      if (existing) {
+        existing.calories += totalsForMeal.calories;
+        existing.fat += totalsForMeal.fat;
+      } else {
+        totals.set(key, {
+          calories: totalsForMeal.calories,
+          fat: totalsForMeal.fat
+        });
+      }
+    });
+
+    const summaryKey = getDateKey(summary.date);
+    if (summaryKey) {
+      totals.set(summaryKey, {
+        calories: summary.total_calories,
+        fat: summary.total_fat
+      });
+    }
+
+    return Array.from(totals.entries())
+      .map(([isoDate, totalsForDay]) => ({
+        isoDate,
+        calories: totalsForDay.calories,
+        fat: totalsForDay.fat
+      }))
+      .sort((a, b) => a.isoDate.localeCompare(b.isoDate));
+  }, [data.meals, summary.date, summary.total_calories, summary.total_fat]);
+
+  const extendedTrendData = useMemo<TrendDatum[]>(() => {
+    const slice = dailyTrendData.slice(-14);
+    return slice.length > 0 ? slice : dailyTrendData;
+  }, [dailyTrendData]);
+
+  const [selectedRange, setSelectedRange] = useState<DateRange | null>(null);
+  const [pendingRange, setPendingRange] = useState<DateRange | null>(null);
+  const [isDraggingRange, setIsDraggingRange] = useState(false);
+  const dragRangeAnchorRef = useRef<string | null>(null);
+  const pendingRangeRef = useRef<DateRange | null>(null);
+
+  const chartDateFormatter = useMemo(
+    () => new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }),
+    []
+  );
+
+  const formatChartLabel = useCallback(
+    (isoDate: string) => {
+      const [yearString, monthString, dayString] = isoDate.split("-");
+      const year = Number.parseInt(yearString ?? "", 10);
+      const month = Number.parseInt(monthString ?? "", 10);
+      const day = Number.parseInt(dayString ?? "", 10);
+      if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+        return isoDate;
+      }
+      const labelDate = new Date(year, month - 1, day);
+      return chartDateFormatter.format(labelDate).replace(" ", "-");
+    },
+    [chartDateFormatter]
+  );
+
+  const activeRange = pendingRange ?? selectedRange;
+
+  const trendDataForDisplay = useMemo(() => {
+    if (activeRange) {
+      return dailyTrendData.filter(
+        (datum) => datum.isoDate >= activeRange.start && datum.isoDate <= activeRange.end
+      );
+    }
+    const fallback = dailyTrendData.slice(-4);
+    if (fallback.length > 0) {
+      return fallback;
+    }
+    return dailyTrendData;
+  }, [activeRange, dailyTrendData]);
+
+  const startRangeSelection = useCallback((isoDate: string) => {
+    dragRangeAnchorRef.current = isoDate;
+    const range = normalizeRange(isoDate, isoDate);
+    pendingRangeRef.current = range;
+    setPendingRange(range);
+    setIsDraggingRange(true);
+  }, []);
+
+  const updateRangeSelection = useCallback((isoDate: string) => {
+    if (!dragRangeAnchorRef.current) {
+      return;
+    }
+    const range = normalizeRange(dragRangeAnchorRef.current, isoDate);
+    pendingRangeRef.current = range;
+    setPendingRange(range);
+  }, []);
+
+  const finalizeRangeSelection = useCallback(() => {
+    const range = pendingRangeRef.current;
+    if (range) {
+      setSelectedRange(range);
+    }
+    pendingRangeRef.current = null;
+    setPendingRange(null);
+    dragRangeAnchorRef.current = null;
+    setIsDraggingRange(false);
+  }, []);
+
+  const clearRangeSelection = useCallback(() => {
+    setSelectedRange(null);
+    setPendingRange(null);
+    pendingRangeRef.current = null;
+    dragRangeAnchorRef.current = null;
+    setIsDraggingRange(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isDraggingRange) {
+      return undefined;
+    }
+
+    const handlePointerEnd = () => {
+      finalizeRangeSelection();
+    };
+
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
+    return () => {
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
+    };
+  }, [finalizeRangeSelection, isDraggingRange]);
 
   const toggleMealForm = useCallback(() => {
     setIsMealFormOpen((prev) => {
@@ -322,15 +463,11 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
           </header>
 
           <div className="template-one__sparkline">
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <polyline
-                points={generateSparkline(sparklineValues)}
-                fill="none"
-                stroke="#86a361"
-                strokeWidth={4}
-                strokeLinecap="round"
-              />
-            </svg>
+            <DailyTrendChart
+              data={trendDataForDisplay}
+              extendedData={extendedTrendData}
+              formatLabel={formatChartLabel}
+            />
           </div>
           <ul className="template-one__progress-list">
             <li>
@@ -364,17 +501,70 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
               </div>
               {calendar.weeks.map((week, index) => (
                 <div className="template-one__calendar-week" role="row" key={index}>
-                  {week.map((day, dayIndex) => (
-                    <span
-                      key={`${index}-${dayIndex}`}
-                      role="gridcell"
-                      className={`template-one__calendar-day${
-                        day.day === 0 ? " template-one__calendar-day--empty" : ""
-                      }${day.isToday ? " template-one__calendar-day--active" : ""}`}
-                    >
-                      {day.day !== 0 ? day.day : ""}
-                    </span>
-                  ))}
+                  {week.map((day, dayIndex) => {
+                    if (day.day === 0) {
+                      return (
+                        <span
+                          key={`${index}-${dayIndex}`}
+                          role="gridcell"
+                          className="template-one__calendar-day template-one__calendar-day--empty"
+                          aria-hidden="true"
+                        />
+                      );
+                    }
+
+                    const isInRange = Boolean(
+                      activeRange && day.isoDate && day.isoDate >= activeRange.start && day.isoDate <= activeRange.end
+                    );
+                    const isRangeStart = Boolean(isInRange && activeRange?.start === day.isoDate);
+                    const isRangeEnd = Boolean(isInRange && activeRange?.end === day.isoDate);
+                    const classNames = [
+                      "template-one__calendar-day",
+                      day.isToday ? "template-one__calendar-day--active" : "",
+                      isInRange ? "template-one__calendar-day--selected" : "",
+                      isRangeStart ? "template-one__calendar-day--range-start" : "",
+                      isRangeEnd ? "template-one__calendar-day--range-end" : ""
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+
+                    return (
+                      <button
+                        key={`${index}-${dayIndex}`}
+                        type="button"
+                        role="gridcell"
+                        className={classNames}
+                        data-date={day.isoDate}
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          if (day.isoDate) {
+                            startRangeSelection(day.isoDate);
+                          }
+                        }}
+                        onPointerEnter={() => {
+                          if (day.isoDate && isDraggingRange) {
+                            updateRangeSelection(day.isoDate);
+                          }
+                        }}
+                        onKeyDown={(event) => {
+                          if (!day.isoDate) {
+                            return;
+                          }
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedRange(normalizeRange(day.isoDate, day.isoDate));
+                          }
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            clearRangeSelection();
+                          }
+                        }}
+                        aria-pressed={isInRange}
+                      >
+                        {day.day}
+                      </button>
+                    );
+                  })}
                 </div>
               ))}
             </div>
