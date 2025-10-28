@@ -1,6 +1,15 @@
 "use client";
 
-import { type CSSProperties, type KeyboardEvent, type PointerEvent, useCallback, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState
+} from "react";
+import { createPortal } from "react-dom";
 
 export interface TrendDatum {
   isoDate: string;
@@ -276,12 +285,35 @@ export default function DailyTrendChart({ data, extendedData, formatLabel }: Dai
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [modalHoverIndex, setModalHoverIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPortalReady, setIsPortalReady] = useState(false);
 
   const geometry = useMemo(() => computeGeometry(data, formatLabel, DEFAULT_DIMENSIONS), [data, formatLabel]);
   const modalGeometry = useMemo(
     () => computeGeometry(extendedData, formatLabel, MODAL_DIMENSIONS),
     [extendedData, formatLabel]
   );
+
+  useEffect(() => {
+    setIsPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isPortalReady) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = previousOverflow;
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isModalOpen, isPortalReady]);
 
   const openModal = useCallback(() => {
     if (!geometry.points.length) {
@@ -309,36 +341,39 @@ export default function DailyTrendChart({ data, extendedData, formatLabel }: Dai
         ariaLabel="Daily calorie trend chart showing the last selected days."
       />
 
-      {isModalOpen && (
-        <div className="trend-chart__modal" role="dialog" aria-modal="true" aria-label="Expanded daily calorie trend">
-          <div className="trend-chart__modal-content">
-            <header className="trend-chart__modal-header">
-              <div>
-                <h3>Daily calories • Last 14 days</h3>
-                <p>Hover to inspect calories and total fat for each day.</p>
-              </div>
-              <button type="button" className="trend-chart__modal-close" onClick={closeModal}>
-                Close
-              </button>
-            </header>
-            <div className="trend-chart__modal-body">
-              {modalGeometry.points.length ? (
-                <ChartCanvas
-                  geometry={modalGeometry}
-                  hoverIndex={modalHoverIndex}
-                  onHoverIndexChange={setModalHoverIndex}
-                  ariaLabel="Daily calorie trend for the last fourteen days"
-                  interactive={false}
-                />
-              ) : (
-                <div className="trend-chart__empty trend-chart__empty--modal">
-                  Not enough entries to display the last fourteen days.
+      {isPortalReady &&
+        isModalOpen &&
+        createPortal(
+          <div className="trend-chart__modal" role="dialog" aria-modal="true" aria-label="Expanded daily calorie trend">
+            <div className="trend-chart__modal-content">
+              <header className="trend-chart__modal-header">
+                <div>
+                  <h3>Daily calories • Last 14 days</h3>
+                  <p>Hover to inspect calories and total fat for each day.</p>
                 </div>
-              )}
+                <button type="button" className="trend-chart__modal-close" onClick={closeModal}>
+                  Close
+                </button>
+              </header>
+              <div className="trend-chart__modal-body">
+                {modalGeometry.points.length ? (
+                  <ChartCanvas
+                    geometry={modalGeometry}
+                    hoverIndex={modalHoverIndex}
+                    onHoverIndexChange={setModalHoverIndex}
+                    ariaLabel="Daily calorie trend for the last fourteen days"
+                    interactive={false}
+                  />
+                ) : (
+                  <div className="trend-chart__empty trend-chart__empty--modal">
+                    Not enough entries to display the last fourteen days.
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
