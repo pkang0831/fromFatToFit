@@ -170,15 +170,15 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
 
     if (calorieBalance > 0) {
       const deficit = formatNumber(calorieBalance);
-      return `Nice calorie deficit! You're about ${deficit} kcal under your goal with ${logged} kcal logged.`;
+      return `You are ${deficit} kcal under your goal with ${logged} kcal logged.`;
     }
 
     if (calorieBalance < 0) {
       const surplus = formatNumber(Math.abs(calorieBalance));
-      return `You've gone over by ${surplus} kcal today. Take a light walk or choose lean proteins for dinner.`;
+      return `You've exceeded the target by ${surplus} kcal today.`;
     }
 
-    return `Perfect balance — you've matched your ${formatNumber(calorieTarget)} kcal target.`;
+    return `You matched the ${formatNumber(calorieTarget)} kcal target.`;
   }, [calorieBalance, calorieTarget, summary.total_calories]);
 
   const energyCue = summary.motivation_message ?? "Fuel up with quality foods to keep energy high.";
@@ -236,7 +236,7 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
       <div className="template-one__grid">
         <section className="template-one__card template-one__summary" aria-labelledby="summary-heading">
           <header className="template-one__summary-header">
-            <div className="template-one__summary-heading">
+            <div className="template-one__summary-top">
               <div className="template-one__fat-loss">
                 <span className="template-one__fat-loss-label">Today's total fat loss</span>
                 <strong className="template-one__fat-loss-value">
@@ -244,14 +244,16 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
                 </strong>
                 <p className="template-one__fat-loss-note">{fatLossNote}</p>
               </div>
-              <div className="template-one__summary-title">
-                <p className="template-one__eyebrow">Daily nutrition summary</p>
-                <h2 id="summary-heading">{calendar.monthLabel}</h2>
+              <div className="template-one__summary-heading">
+                <div className="template-one__summary-title">
+                  <p className="template-one__eyebrow">Daily nutrition summary</p>
+                  <h2 id="summary-heading">{calendar.monthLabel}</h2>
+                </div>
+                <div className="template-one__summary-target">
+                  <span className="template-one__badge">Target {formatNumber(calorieTarget)} kcal</span>
+                  <p className="template-one__summary-insight">{calorieInsight}</p>
+                </div>
               </div>
-            </div>
-            <div className="template-one__summary-target">
-              <span className="template-one__badge">Target {formatNumber(calorieTarget)} kcal</span>
-              <p className="template-one__summary-insight">{calorieInsight}</p>
             </div>
           </header>
 
