@@ -497,7 +497,7 @@ a {
 .template-one__fat-loss {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 52px;
   align-items: flex-start;
   background: rgba(255, 255, 255, 0.72);
   border-radius: 22px;
