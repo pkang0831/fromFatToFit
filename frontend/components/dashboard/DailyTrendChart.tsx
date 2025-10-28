@@ -2,7 +2,7 @@
 
 import {
   type CSSProperties,
-  type KeyboardEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent,
   useCallback,
   useEffect,
@@ -189,7 +189,7 @@ function ChartCanvas({
   }, [onHoverIndexChange]);
 
   const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLDivElement>) => {
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
       if (!onClick) {
         return;
       }
@@ -326,6 +326,25 @@ export default function DailyTrendChart({ data, extendedData, formatLabel }: Dai
     setIsModalOpen(false);
     setModalHoverIndex(null);
   }, []);
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeModal();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeModal, isModalOpen]);
 
   if (!geometry.points.length) {
     return <div className="trend-chart__empty">No calorie data available for the selected dates.</div>;

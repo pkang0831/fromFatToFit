@@ -1077,26 +1077,26 @@ a {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(12px);
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
-  padding: 0;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 6vw, 72px);
 }
 
 .trend-chart__modal-content {
   background: #ffffff;
-  border-radius: 0;
-  box-shadow: none;
-  width: 100vw;
-  height: 100vh;
-  max-width: none;
-  padding: clamp(24px, 3vw, 48px) clamp(20px, 5vw, 96px) clamp(32px, 7vw, 120px);
+  border-radius: 32px;
+  box-shadow: 0 32px 64px rgba(15, 23, 42, 0.28);
+  width: min(60vw, 1080px);
+  max-width: 100%;
+  max-height: min(60vh, 720px);
+  padding: clamp(24px, 3vw, 48px) clamp(20px, 4vw, 56px) clamp(28px, 5vw, 64px);
   display: flex;
   flex-direction: column;
-  gap: clamp(24px, 4vw, 56px);
-  overflow-y: auto;
+  gap: clamp(20px, 3vw, 40px);
+  overflow: hidden;
 }
 
 .trend-chart__modal-body {
@@ -1104,11 +1104,12 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
 }
 
 .trend-chart__modal-body .trend-chart__canvas {
   flex: 1;
-  min-height: clamp(320px, 65vh, 720px);
+  min-height: clamp(260px, 38vh, 520px);
 }
 
 .trend-chart__modal-body .trend-chart__empty--modal {
@@ -1154,6 +1155,17 @@ a {
 .trend-chart__modal-close:focus-visible {
   outline: 3px solid rgba(134, 163, 97, 0.8);
   outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .trend-chart__modal-content {
+    width: min(92vw, 640px);
+    max-height: 88vh;
+  }
+
+  .trend-chart__modal-body .trend-chart__canvas {
+    min-height: clamp(240px, 48vh, 480px);
+  }
 }
 
 .template-one__progress-list {
