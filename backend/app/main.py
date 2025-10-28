@@ -165,6 +165,27 @@ def create_meal(
     return meal
 
 
+@app.delete("/meals/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_meal(
+    meal_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    meal = (
+        db.query(models.Meal)
+        .filter(models.Meal.id == meal_id, models.Meal.user_id == current_user.id)
+        .first()
+    )
+    if meal is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal not found")
+
+    meal_date = meal.date
+    db.delete(meal)
+    db.flush()
+    _recalculate_summary(db, current_user, meal_date)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @app.get("/dashboard", response_model=schemas.DashboardResponse)
 def get_dashboard(
     current_user: models.User = Depends(get_current_user),
