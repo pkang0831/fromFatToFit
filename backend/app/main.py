@@ -16,12 +16,19 @@ from . import auth, models, schemas
 from .database import Base, engine
 from .dependencies import get_current_user, get_db, get_token
 from .services.motivation import MotivationMessageService
+from .services.usda_db import search_usda_foods, get_usda_db
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="From Fat To Fit API", version="0.1.0")
 
 logger = logging.getLogger(__name__)
+
+# Initialize USDA database on startup (lazy - only when needed)
+# Note: We don't initialize on startup to avoid reload loops with uvicorn --reload
+# The database will initialize automatically on first search request
 
 DEFAULT_ALLOWED_ORIGINS = {
     "http://localhost:3000",
@@ -263,28 +270,72 @@ def search_foods(
         return schemas.FoodSearchResponse(query=normalized_query, results=[])
 
     limit = max(1, min(limit, 25))
-    cached_items: List[models.FoodItem] = (
-        db.query(models.FoodItem)
-        .filter(
-            or_(
-                models.FoodItem.name.ilike(f"%{normalized_query}%"),
-                models.FoodItem.brand_name.ilike(f"%{normalized_query}%"),
+    results: List[models.FoodItem] = []
+    
+    # First, search USDA database
+    usda_results = search_usda_foods(normalized_query, limit=limit)
+    for usda_food in usda_results:
+        # Check if already imported
+        existing = db.query(models.FoodItem).filter(
+            models.FoodItem.provider == "usda",
+            models.FoodItem.provider_food_id == str(usda_food["fdc_id"])
+        ).first()
+        
+        if existing:
+            results.append(existing)
+        else:
+            # Import USDA food into FoodItem table
+            food_item = models.FoodItem(
+                provider="usda",
+                provider_food_id=str(usda_food["fdc_id"]),
+                name=usda_food.get("description", ""),
+                brand_name=usda_food.get("brand_owner"),
+                serving_description=(
+                    f"{usda_food.get('serving_size', '')} {usda_food.get('serving_size_unit', '')}".strip()
+                    if usda_food.get("serving_size") else None
+                ),
+                calories=usda_food.get("kcal"),
+                protein=usda_food.get("protein_g"),
+                carbs=usda_food.get("carb_g"),
+                fat=usda_food.get("fat_g"),
             )
-        )
-        .filter(
-            or_(
-                models.FoodItem.created_by_user_id.is_(None),
-                models.FoodItem.created_by_user_id == current_user.id,
+            db.add(food_item)
+            db.flush()
+            results.append(food_item)
+    
+    # If we don't have enough results, search local FoodItem table
+    if len(results) < limit:
+        remaining = limit - len(results)
+        cached_items: List[models.FoodItem] = (
+            db.query(models.FoodItem)
+            .filter(
+                or_(
+                    models.FoodItem.name.ilike(f"%{normalized_query}%"),
+                    models.FoodItem.brand_name.ilike(f"%{normalized_query}%"),
+                )
             )
+            .filter(
+                or_(
+                    models.FoodItem.created_by_user_id.is_(None),
+                    models.FoodItem.created_by_user_id == current_user.id,
+                )
+            )
+            .filter(
+                ~models.FoodItem.id.in_([r.id for r in results] if results else [])
+            )
+            .order_by(models.FoodItem.search_count.desc(), models.FoodItem.updated_at.desc())
+            .limit(remaining)
+            .all()
         )
-        .order_by(models.FoodItem.search_count.desc(), models.FoodItem.updated_at.desc())
-        .limit(limit)
-        .all()
-    )
-    for item in cached_items:
-        item.search_count += 1
-
-    return schemas.FoodSearchResponse(query=normalized_query, results=cached_items[:limit])
+        results.extend(cached_items)
+    
+    # Update search counts
+    for item in results:
+        if hasattr(item, 'search_count'):
+            item.search_count += 1
+    
+    db.commit()
+    return schemas.FoodSearchResponse(query=normalized_query, results=results[:limit])
 
 
 @app.post("/foods", response_model=schemas.FoodItemOut, status_code=status.HTTP_201_CREATED)

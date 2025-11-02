@@ -214,5 +214,6 @@ __marimo__/
 backend/app/data/FoodData_Central_csv/*
 backend/app/data/FoodData_Central_Supporting_Data_csv/*
 *.parquet
+*.duckdb
 frontend/.next/
 .next/
