@@ -26,6 +26,28 @@ export interface FoodSuggestion {
   created_by_user_id?: number | null;
 }
 
+export interface MicronutrientEntry {
+  amount: number;
+  unit?: string | null;
+  label: string;
+}
+
+export interface FoodNutritionDetail {
+  id?: number;
+  provider: string;
+  provider_food_id?: string;
+  name: string;
+  brand_name?: string | null;
+  serving_description?: string | null;
+  serving_size?: number | null;
+  serving_size_unit?: string | null;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+  micronutrients: Record<string, MicronutrientEntry>;
+}
+
 export interface DashboardData {
   user: {
     id: number;
@@ -148,6 +170,10 @@ export async function searchFoods(query: string, limit = 10): Promise<FoodSugges
     `/foods/search?${params.toString()}`
   );
   return response.results;
+}
+
+export async function getFoodNutrition(foodId: number): Promise<FoodNutritionDetail> {
+  return request<FoodNutritionDetail>(`/foods/${foodId}/nutrition`);
 }
 
 export async function createFoodItem(payload: {

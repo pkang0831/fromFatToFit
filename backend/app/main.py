@@ -16,7 +16,7 @@ from . import auth, models, schemas
 from .database import Base, engine
 from .dependencies import get_current_user, get_db, get_token
 from .services.motivation import MotivationMessageService
-from .services.usda_db import search_usda_foods, get_usda_db
+from .services.usda_db import search_usda_foods, get_usda_db, get_usda_food_detail
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -273,7 +273,7 @@ def search_foods(
     results: List[models.FoodItem] = []
     
     # First, search USDA database
-    usda_results = search_usda_foods(normalized_query, limit=limit)
+    usda_results = search_usda_foods(normalized_query, limit=limit, include_micronutrients=False)
     for usda_food in usda_results:
         # Check if already imported
         existing = db.query(models.FoodItem).filter(
@@ -336,6 +336,61 @@ def search_foods(
     
     db.commit()
     return schemas.FoodSearchResponse(query=normalized_query, results=results[:limit])
+
+
+@app.get("/foods/{food_id}/nutrition", response_model=schemas.FoodNutritionDetail)
+def get_food_nutrition(
+    food_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    food: Optional[models.FoodItem] = (
+        db.query(models.FoodItem)
+        .filter(models.FoodItem.id == food_id)
+        .first()
+    )
+
+    if food is None or (food.created_by_user_id and food.created_by_user_id != current_user.id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Food not found")
+
+    payload = {
+        "id": food.id,
+        "provider": food.provider,
+        "provider_food_id": food.provider_food_id,
+        "name": food.name,
+        "brand_name": food.brand_name,
+        "serving_description": food.serving_description,
+        "calories": food.calories,
+        "protein": food.protein,
+        "carbs": food.carbs,
+        "fat": food.fat,
+        "micronutrients": {},
+    }
+
+    if food.provider == "usda" and food.provider_food_id:
+        try:
+            fdc_id = int(food.provider_food_id)
+        except ValueError:
+            fdc_id = None
+
+        if fdc_id is not None:
+            usda_detail = get_usda_food_detail(fdc_id)
+            if usda_detail:
+                payload.update(
+                    {
+                        "name": usda_detail.get("description") or payload["name"],
+                        "brand_name": usda_detail.get("brand_owner") or payload["brand_name"],
+                        "serving_size": usda_detail.get("serving_size"),
+                        "serving_size_unit": usda_detail.get("serving_size_unit"),
+                        "calories": usda_detail.get("kcal", payload["calories"]),
+                        "protein": usda_detail.get("protein_g", payload["protein"]),
+                        "carbs": usda_detail.get("carb_g", payload["carbs"]),
+                        "fat": usda_detail.get("fat_g", payload["fat"]),
+                        "micronutrients": usda_detail.get("micronutrients", {}),
+                    }
+                )
+
+    return schemas.FoodNutritionDetail(**payload)
 
 
 @app.post("/foods", response_model=schemas.FoodItemOut, status_code=status.HTTP_201_CREATED)

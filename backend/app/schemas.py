@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -140,6 +140,28 @@ class FoodItemOut(FoodItemBase):
 class FoodSearchResponse(BaseModel):
     query: str
     results: List[FoodItemOut]
+
+
+class MicronutrientEntry(BaseModel):
+    amount: float
+    unit: Optional[str]
+    label: str
+
+
+class FoodNutritionDetail(BaseModel):
+    id: Optional[int] = None
+    provider: str
+    provider_food_id: Optional[str] = None
+    name: str
+    brand_name: Optional[str] = None
+    serving_description: Optional[str] = None
+    serving_size: Optional[float] = None
+    serving_size_unit: Optional[str] = None
+    calories: Optional[float] = None
+    protein: Optional[float] = None
+    carbs: Optional[float] = None
+    fat: Optional[float] = None
+    micronutrients: Dict[str, MicronutrientEntry]
 
 
 class MotivationMessageOut(BaseModel):

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { FoodSuggestion, MealItemInput, createFoodItem, logMeal, searchFoods } from "@/lib/api";
+import { FoodSuggestion, MealItemInput, createFoodItem, getFoodNutrition, logMeal, searchFoods } from "@/lib/api";
 
 interface MealFormProps {
   onLogged: () => Promise<void> | void;
@@ -150,7 +150,7 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
         setIsSearching((prev) => ({ ...prev, [index]: false }));
         delete searchTimers.current[index];
       }
-    }, 300);
+    }, 600);
   };
 
   useEffect(() => {
@@ -163,7 +163,7 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
     };
   }, []);
 
-  const applySuggestion = (index: number, suggestion: FoodSuggestion) => {
+  const applySuggestion = async (index: number, suggestion: FoodSuggestion) => {
     setItems((prev) => {
       const next = [...prev];
       next[index] = {
@@ -183,6 +183,28 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
       delete next[index];
       return next;
     });
+
+    try {
+      const detail = await getFoodNutrition(suggestion.id);
+      setItems((prev) => {
+        const next = [...prev];
+        const current = next[index];
+        if (!current) return prev;
+        next[index] = {
+          ...current,
+          name: detail.name ?? current.name,
+          brand_name: detail.brand_name ?? current.brand_name,
+          quantity: current.quantity || detail.serving_description || current.quantity,
+          calories: detail.calories ?? current.calories,
+          protein: detail.protein ?? current.protein,
+          carbs: detail.carbs ?? current.carbs,
+          fat: detail.fat ?? current.fat
+        };
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to load nutrition detail", err);
+    }
   };
 
   const canSaveItem = (item: MealItemInput) =>
@@ -306,7 +328,7 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
                           type="button"
                           className="autocomplete-item"
                           onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => applySuggestion(index, suggestion)}
+                          onClick={() => void applySuggestion(index, suggestion)}
                         >
                           <span className="autocomplete-item-name">{suggestion.name}</span>
                           {suggestion.brand_name && (
@@ -350,7 +372,7 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
                   <input
                     type="number"
                     min="0"
-                    step="0.1"
+                    step="0.01"
                     className="input"
                     value={item[key as keyof MealItemInput] ?? ""}
                     onChange={(event) => updateItem(index, key as keyof MealItemInput, event.target.value)}
