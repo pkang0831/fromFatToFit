@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 import logging
 import uuid
@@ -16,7 +17,7 @@ from . import auth, models, schemas
 from .database import Base, engine
 from .dependencies import get_current_user, get_db, get_token
 from .services.motivation import MotivationMessageService
-from .services.usda_db import search_usda_foods, get_usda_db, get_usda_food_detail
+from .services.usda_db import search_usda_foods, get_usda_db, get_usda_food_detail, preload_usda_gold
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +26,12 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="From Fat To Fit API", version="0.1.0")
 
 logger = logging.getLogger(__name__)
+
+# Preload USDA gold table at startup so first autocomplete is fast
+@app.on_event("startup")
+async def _preload_usda_gold() -> None:
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, preload_usda_gold)
 
 # Initialize USDA database on startup (lazy - only when needed)
 # Note: We don't initialize on startup to avoid reload loops with uvicorn --reload
@@ -365,6 +372,15 @@ def get_food_nutrition(
         "carbs": food.carbs,
         "fat": food.fat,
         "micronutrients": {},
+        "per_100": {
+            "unit": "serving",
+            "amount": 1.0,
+            "calories": food.calories,
+            "protein": food.protein,
+            "carbs": food.carbs,
+            "fat": food.fat,
+        },
+        "unit_category": "mass",
     }
 
     if food.provider == "usda" and food.provider_food_id:
@@ -387,6 +403,8 @@ def get_food_nutrition(
                         "carbs": usda_detail.get("carb_g", payload["carbs"]),
                         "fat": usda_detail.get("fat_g", payload["fat"]),
                         "micronutrients": usda_detail.get("micronutrients", {}),
+                        "per_100": usda_detail.get("per_100", payload["per_100"]),
+                        "unit_category": usda_detail.get("unit_category", payload["unit_category"]),
                     }
                 )
 

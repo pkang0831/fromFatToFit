@@ -1,9 +1,11 @@
 """USDA FoodData Central Database Service using DuckDB."""
 import logging
+import threading
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple, TYPE_CHECKING, Literal
 
 import duckdb
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +15,87 @@ _db_path = Path(__file__).parent.parent.parent / "usda_foods.duckdb"
 _MICRONUTRIENT_CATALOG: Optional[List[Dict[str, str]]] = None
 _GOLD_TABLE_PATH = Path(__file__).parent.parent / "data" / "medallion" / "gold" / "food_search.parquet"
 _gold_con: Optional[duckdb.DuckDBPyConnection] = None
+_gold_df: Optional["pd.DataFrame"] = None
+_gold_prefix_index: Dict[str, "pd.Index"] = {}
+_gold_ready = threading.Event()
+
+MASS_UNIT_FACTORS: Dict[str, float] = {
+    "g": 1.0,
+    "gram": 1.0,
+    "kg": 1000.0,
+    "kilogram": 1000.0,
+    "mg": 0.001,
+    "milligram": 0.001,
+    "oz": 28.3495231,
+    "ounce": 28.3495231,
+    "lb": 453.59237,
+    "pound": 453.59237
+}
+
+VOLUME_UNIT_FACTORS: Dict[str, float] = {
+    "ml": 1.0,
+    "milliliter": 1.0,
+    "l": 1000.0,
+    "liter": 1000.0,
+    "cup": 240.0,
+    "cups": 240.0,
+    "floz": 29.5735,
+    "fluidounce": 29.5735,
+    "tbsp": 15.0,
+    "tablespoon": 15.0,
+    "tsp": 5.0,
+    "teaspoon": 5.0
+}
+
+UNIT_ALIASES: Dict[str, str] = {
+    "grams": "g",
+    "kilograms": "kg",
+    "milligrams": "mg",
+    "ounces": "oz",
+    "pounds": "lb",
+    "milliliters": "ml",
+    "liters": "l",
+    "fluidounces": "floz",
+    "fluidounce": "floz",
+    "flounce": "floz",
+    "tablespoons": "tbsp",
+    "teaspoons": "tsp"
+}
+
+
+def _normalize_unit(unit: Optional[str]) -> str:
+    if not unit:
+        return ""
+    norm = unit.strip().lower()
+    norm = norm.replace(".", "")
+    norm = norm.replace("fluid ounce", "floz")
+    norm = norm.replace("fluid ounces", "floz")
+    norm = norm.replace("fl oz", "floz")
+    norm = norm.replace(" ", "")
+    norm = UNIT_ALIASES.get(norm, norm)
+    return norm
+
+
+def _convert_mass(value: Optional[float], unit: str) -> Optional[float]:
+    if value is None:
+        return None
+    factor = MASS_UNIT_FACTORS.get(unit)
+    if factor is None:
+        return None
+    return float(value) * factor
+
+
+def _convert_volume(value: Optional[float], unit: str) -> Optional[float]:
+    if value is None:
+        return None
+    factor = VOLUME_UNIT_FACTORS.get(unit)
+    if factor is None:
+        return None
+    return float(value) * factor
+_gold_ready = threading.Event()
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def get_usda_db() -> duckdb.DuckDBPyConnection:
@@ -64,8 +147,9 @@ def _ensure_micronutrient_catalog(con: duckdb.DuckDBPyConnection) -> List[Dict[s
 
 
 def _load_gold_table() -> duckdb.DuckDBPyConnection:
-    global _gold_con
-    if _gold_con is not None:
+    global _gold_con, _gold_df, _gold_prefix_index
+    if _gold_con is not None and _gold_df is not None:
+        _gold_ready.set()
         return _gold_con
 
     if not _GOLD_TABLE_PATH.exists():
@@ -82,7 +166,83 @@ def _load_gold_table() -> duckdb.DuckDBPyConnection:
         """
     )
     _gold_con = con
-    return con
+
+    import pandas as pd
+
+    if _gold_df is None:
+        logger.info("Loading USDA gold table into memory (%s)", _GOLD_TABLE_PATH)
+        df = con.execute("SELECT * FROM food_search_gold").fetchdf()
+        df["description"] = df["description"].fillna("")
+        df["brand_owner"] = df["brand_owner"].fillna("")
+        df["serving_size_unit"] = df["serving_size_unit"].fillna("")
+        df["description_lower"] = df["description"].str.lower()
+        df["brand_lower"] = df["brand_owner"].str.lower()
+        df["prefix3"] = df["description_lower"].str[:3]
+        df["publication_date"] = pd.to_datetime(df["publication_date"], errors="coerce")
+
+        index_map: Dict[str, pd.Index] = {}
+        for prefix, idx in df.groupby("prefix3").indices.items():
+            subset = df.loc[idx].sort_values(
+                ["description_lower", "brand_lower", "publication_date"],
+                ascending=[True, True, False],
+            )
+            index_map[prefix] = subset.index
+        _gold_df = df
+        _gold_prefix_index = index_map
+        logger.info("Gold table loaded (rows=%d prefixes=%d)", len(df), len(index_map))
+        _gold_ready.set()
+
+    return _gold_con
+
+
+def preload_usda_gold() -> None:
+    """Load the gold table into memory before serving autocomplete requests."""
+    if _gold_ready.is_set():
+        return
+    logger.info("Preloading USDA gold table into memory...")
+    _load_gold_table()
+    logger.info("USDA gold table ready")
+
+
+@lru_cache(maxsize=512)
+def _search_gold_df(term_lower: str, limit: int) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
+    _load_gold_table()
+    df = _gold_df  # type: ignore[arg-type]
+    prefix_index = _gold_prefix_index  # type: ignore[arg-type]
+    assert df is not None
+
+    prefix = term_lower[:3]
+    if prefix in prefix_index:
+        candidates = df.loc[prefix_index[prefix]]
+    else:
+        candidates = df
+
+    mask = (
+        candidates["description_lower"].str.startswith(term_lower)
+        | candidates["description_lower"].str.contains(f" {term_lower}")
+        | candidates["brand_lower"].str.contains(term_lower)
+    )
+    filtered = candidates.loc[mask]
+
+    if filtered.empty:
+        fallback_mask = df["description_lower"].str.contains(term_lower) | df["brand_lower"].str.contains(term_lower)
+        filtered = df.loc[fallback_mask]
+
+    columns = [
+        "fdc_id",
+        "description",
+        "brand_owner",
+        "serving_size",
+        "serving_size_unit",
+        "kcal",
+        "protein_g",
+        "fat_g",
+        "carb_g",
+        "branded_food_category",
+    ]
+
+    records = filtered[columns].head(limit).to_dict("records")
+    return tuple(tuple(record.items()) for record in records)
 
 
 def _create_parquet_views(con: duckdb.DuckDBPyConnection) -> None:
@@ -453,67 +613,9 @@ def search_usda_foods(query: str, limit: int = 10, *, include_micronutrients: bo
     if len(normalized_query) < 1:
         return []
 
-    gold_con = _load_gold_table()
-
     lower_term = normalized_query.lower()
-    records: List[Dict[str, Any]] = []
-    seen: set[int] = set()
-    remaining = limit
-
-    def fetch(sql: str, pattern: str) -> None:
-        nonlocal remaining
-        if remaining <= 0:
-            return
-        try:
-            df = gold_con.execute(sql, [pattern, remaining]).fetchdf()
-        except Exception as err:
-            logger.error("Error searching USDA foods: %s", err, exc_info=True)
-            return
-        if df.empty:
-            return
-        for row in df.to_dict("records"):
-            fdc_id = row["fdc_id"]
-            if fdc_id in seen:
-                continue
-            records.append(row)
-            seen.add(fdc_id)
-            remaining -= 1
-            if remaining <= 0:
-                break
-
-    prefix_pattern = f"{lower_term}%"
-    word_boundary_pattern = f"% {lower_term}%"
-    contains_pattern = f"%{lower_term}%"
-
-    base_select = (
-        "SELECT \
-            fdc_id, description, brand_owner, serving_size, serving_size_unit, \
-            kcal, protein_g, fat_g, carb_g, \
-            LOWER(description) AS description_lower, \
-            LOWER(brand_owner) AS brand_lower \
-         FROM food_search_gold"
-    )
-
-    fetch(
-        base_select + " WHERE description_lower LIKE $1 ORDER BY description LIMIT $2",
-        prefix_pattern,
-    )
-    fetch(
-        base_select + " WHERE description_lower LIKE $1 ORDER BY description LIMIT $2",
-        word_boundary_pattern,
-    )
-    fetch(
-        base_select + " WHERE brand_lower LIKE $1 ORDER BY brand_owner LIMIT $2",
-        prefix_pattern,
-    )
-    if remaining > 0:
-        fetch(
-            base_select + " WHERE description_lower LIKE $1 ORDER BY description LIMIT $2",
-            contains_pattern,
-        )
-
-    if not records:
-        return []
+    cached = _search_gold_df(lower_term, limit)
+    records = [dict(items) for items in cached]
 
     if include_micronutrients:
         catalog = _ensure_micronutrient_catalog(con)
@@ -602,6 +704,49 @@ def get_usda_food_detail(fdc_id: int) -> Optional[Dict[str, Any]]:
 
     row = detail_df.iloc[0]
 
+    serving_size = row.get("serving_size")
+    serving_unit_raw = row.get("serving_size_unit")
+    normalized_unit = _normalize_unit(serving_unit_raw)
+    unit_category: Literal["mass", "volume"] = "mass"
+    per_unit_amount: Optional[float] = None
+    per100_unit = "g"
+    per100_amount = 100.0
+
+    mass_amount = _convert_mass(serving_size, normalized_unit)
+    if mass_amount is not None and mass_amount > 0:
+        unit_category = "mass"
+        per_unit_amount = mass_amount
+        per100_unit = "g"
+        per100_amount = 100.0
+    else:
+        volume_amount = _convert_volume(serving_size, normalized_unit)
+        if volume_amount is not None and volume_amount > 0:
+            unit_category = "volume"
+            per_unit_amount = volume_amount
+            per100_unit = "ml"
+            per100_amount = 100.0
+        else:
+            unit_category = "mass"
+            per_unit_amount = None
+            per100_unit = normalized_unit or "serving"
+            per100_amount = 1.0
+
+    def per100_value(value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return None
+        if per_unit_amount and per_unit_amount > 0:
+            return (value / per_unit_amount) * per100_amount
+        return value
+
+    per100 = {
+        "unit": per100_unit,
+        "amount": per100_amount,
+        "calories": per100_value(row.get("kcal")),
+        "protein": per100_value(row.get("protein_g")),
+        "carbs": per100_value(row.get("carb_g")),
+        "fat": per100_value(row.get("fat_g")),
+    }
+
     catalog = _ensure_micronutrient_catalog(con)
     micronutrients = {
         entry["name"]: {
@@ -656,5 +801,7 @@ def get_usda_food_detail(fdc_id: int) -> Optional[Dict[str, Any]]:
         "fat_g": row.get("fat_g"),
         "carb_g": row.get("carb_g"),
         "micronutrients": micronutrients,
+        "per_100": per100,
+        "unit_category": unit_category,
     }
 

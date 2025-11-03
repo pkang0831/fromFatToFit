@@ -2,22 +2,144 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { FoodSuggestion, MealItemInput, createFoodItem, getFoodNutrition, logMeal, searchFoods } from "@/lib/api";
+import {
+  FoodSuggestion,
+  MealItemInput,
+  createFoodItem,
+  getFoodNutrition,
+  logMeal,
+  searchFoods,
+  FoodPerHundred
+} from "@/lib/api";
 
 interface MealFormProps {
   onLogged: () => Promise<void> | void;
   initialMealName?: string;
 }
 
-const emptyItem: MealItemInput = {
+type UnitSystem = "metric" | "us";
+type UnitCategory = "mass" | "volume";
+
+interface UnitOption {
+  value: string;
+  label: string;
+  system: UnitSystem;
+  factor: number; // grams or milliliters per unit
+}
+
+const MASS_UNIT_OPTIONS: UnitOption[] = [
+  { value: "g", label: "g", system: "metric", factor: 1 },
+  { value: "kg", label: "kg", system: "metric", factor: 1000 },
+  { value: "mg", label: "mg", system: "metric", factor: 0.001 },
+  { value: "oz", label: "oz", system: "us", factor: 28.3495 },
+  { value: "lb", label: "lb", system: "us", factor: 453.592 }
+];
+
+const VOLUME_UNIT_OPTIONS: UnitOption[] = [
+  { value: "ml", label: "mL", system: "metric", factor: 1 },
+  { value: "l", label: "L", system: "metric", factor: 1000 },
+  { value: "cup", label: "cup", system: "us", factor: 240 },
+  { value: "floz", label: "fl oz", system: "us", factor: 29.5735 },
+  { value: "tbsp", label: "tbsp", system: "us", factor: 15 },
+  { value: "tsp", label: "tsp", system: "us", factor: 5 }
+];
+
+const MASS_UNIT_MAP = MASS_UNIT_OPTIONS.reduce<Record<string, UnitOption>>((acc, option) => {
+  acc[option.value] = option;
+  return acc;
+}, {});
+
+const VOLUME_UNIT_MAP = VOLUME_UNIT_OPTIONS.reduce<Record<string, UnitOption>>((acc, option) => {
+  acc[option.value] = option;
+  return acc;
+}, {});
+
+const getUnitOptions = (category: UnitCategory, system: UnitSystem): UnitOption[] => {
+  const options = category === "mass" ? MASS_UNIT_OPTIONS : VOLUME_UNIT_OPTIONS;
+  return options.filter((option) => option.system === system);
+};
+
+const getUnitMap = (category: UnitCategory): Record<string, UnitOption> =>
+  category === "mass" ? MASS_UNIT_MAP : VOLUME_UNIT_MAP;
+
+const getDefaultUnit = (category: UnitCategory, system: UnitSystem): string => {
+  const options = getUnitOptions(category, system);
+  return options.length > 0 ? options[0].value : category === "mass" ? "g" : "ml";
+};
+
+const formatNumber = (value?: number | null, decimals = 2): string => {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return "";
+  }
+  return (Math.round(value * 10 ** decimals) / 10 ** decimals).toString();
+};
+
+const normalizeMacro = (value?: number | null): number | undefined =>
+  value === null || value === undefined ? undefined : value;
+
+const calculateMacros = (
+  per100: FoodPerHundred | undefined,
+  category: UnitCategory,
+  unit: string,
+  quantity: number
+) => {
+  if (!per100 || quantity <= 0) {
+    return { calories: undefined, protein: undefined, carbs: undefined, fat: undefined };
+  }
+
+  const map = getUnitMap(category);
+  const option = map[unit];
+  if (!option) {
+    const scale = per100.amount ? quantity / per100.amount : quantity;
+    const multiply = (value?: number | null) => (value === undefined || value === null ? undefined : value * scale);
+    return {
+      calories: multiply(per100.calories),
+      protein: multiply(per100.protein),
+      carbs: multiply(per100.carbs),
+      fat: multiply(per100.fat)
+    };
+  }
+
+  const basePerUnit = option.factor / per100.amount;
+  const scale = basePerUnit * quantity;
+
+  const multiply = (value?: number | null) => (value === undefined || value === null ? undefined : value * scale);
+
+  return {
+    calories: multiply(per100.calories),
+    protein: multiply(per100.protein),
+    carbs: multiply(per100.carbs),
+    fat: multiply(per100.fat)
+  };
+};
+
+interface MealItemState extends MealItemInput {
+  unitCategory: UnitCategory;
+  unitSystem: UnitSystem;
+  selectedUnit: string;
+  quantityValue: number;
+  quantityInput: string;
+  per100?: FoodPerHundred;
+  servingSize?: number | null;
+  servingSizeUnit?: string | null;
+}
+
+const emptyItem: MealItemState = {
   name: "",
   brand_name: "",
-  quantity: "",
+  quantity: "1 g",
   notes: "",
   calories: undefined,
   protein: undefined,
   carbs: undefined,
-  fat: undefined
+  fat: undefined,
+  unitCategory: "mass",
+  unitSystem: "metric",
+  selectedUnit: "g",
+  quantityValue: 1,
+  quantityInput: "1",
+  servingSize: null,
+  servingSizeUnit: null
 };
 
 type SaveState = {
@@ -27,7 +149,7 @@ type SaveState = {
 
 export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealFormProps) {
   const [mealName, setMealName] = useState(initialMealName);
-  const [items, setItems] = useState<MealItemInput[]>([{ ...emptyItem }]);
+  const [items, setItems] = useState<MealItemState[]>([{ ...emptyItem }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Record<number, FoodSuggestion[]>>({});
@@ -35,16 +157,33 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
   const [saveStates, setSaveStates] = useState<Record<number, SaveState>>({});
   const searchTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
-  const updateItem = (index: number, field: keyof MealItemInput, value: string) => {
+  const updateItem = (
+    index: number,
+    updates: Partial<MealItemState>,
+    options: { recalc?: boolean; suppressSearch?: boolean } = {}
+  ) => {
     setItems((prev) => {
       const next = [...prev];
-      if (field === "calories") {
-        next[index] = { ...next[index], calories: value ? Number(value) : undefined };
-      } else if (field === "protein" || field === "carbs" || field === "fat") {
-        next[index] = { ...next[index], [field]: value ? Number(value) : undefined };
-      } else {
-        next[index] = { ...next[index], [field]: value };
+      let merged = { ...next[index], ...updates };
+      if (options.recalc) {
+        const quantityValue = merged.quantityValue ?? 0;
+        const macros = calculateMacros(merged.per100, merged.unitCategory, merged.selectedUnit, quantityValue);
+        const quantityText = quantityValue > 0 ? `${formatNumber(quantityValue)} ${merged.selectedUnit}` : "";
+        const existingInput = merged.quantityInput ?? "";
+        const quantityInput =
+          updates.quantityInput !== undefined
+            ? updates.quantityInput
+            : quantityValue > 0
+              ? formatNumber(quantityValue)
+              : existingInput;
+        merged = {
+          ...merged,
+          ...macros,
+          quantity: quantityText,
+          quantityInput
+        };
       }
+      next[index] = merged;
       return next;
     });
 
@@ -56,9 +195,26 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
       return { ...prev, [index]: { status: "idle" } };
     });
 
-    if (field === "name") {
-      triggerSearch(index, value);
+    if (!options.suppressSearch && typeof updates.name === "string") {
+      triggerSearch(index, updates.name);
     }
+  };
+
+  const handleQuantityValueChange = (index: number, rawValue: string) => {
+    const numeric = Number(rawValue);
+    const quantity = Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+    updateItem(index, { quantityValue: quantity, quantityInput: rawValue }, { recalc: true });
+  };
+
+  const handleUnitChange = (index: number, unit: string) => {
+    updateItem(index, { selectedUnit: unit }, { recalc: true });
+  };
+
+  const handleUnitSystemChange = (index: number, system: UnitSystem) => {
+    const current = items[index];
+    if (!current) return;
+    const nextUnit = getDefaultUnit(current.unitCategory, system);
+    updateItem(index, { unitSystem: system, selectedUnit: nextUnit }, { recalc: true });
   };
 
   const addItem = () => {
@@ -164,20 +320,15 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
   }, []);
 
   const applySuggestion = async (index: number, suggestion: FoodSuggestion) => {
-    setItems((prev) => {
-      const next = [...prev];
-      next[index] = {
-        ...next[index],
-        name: suggestion.name,
-        brand_name: suggestion.brand_name ?? "",
-        quantity: next[index].quantity || suggestion.serving_description || "",
-        calories: suggestion.calories ?? 0,
-        protein: suggestion.protein ?? undefined,
-        carbs: suggestion.carbs ?? undefined,
-        fat: suggestion.fat ?? undefined
-      };
-      return next;
-    });
+    updateItem(index, {
+      name: suggestion.name,
+      brand_name: suggestion.brand_name ?? "",
+      calories: normalizeMacro(suggestion.calories),
+      protein: normalizeMacro(suggestion.protein),
+      carbs: normalizeMacro(suggestion.carbs),
+      fat: normalizeMacro(suggestion.fat),
+      quantity: suggestion.serving_description ?? ""
+    }, { suppressSearch: true });
     setSuggestions((prev) => {
       const next = { ...prev };
       delete next[index];
@@ -186,28 +337,39 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
 
     try {
       const detail = await getFoodNutrition(suggestion.id);
-      setItems((prev) => {
-        const next = [...prev];
-        const current = next[index];
-        if (!current) return prev;
-        next[index] = {
-          ...current,
-          name: detail.name ?? current.name,
-          brand_name: detail.brand_name ?? current.brand_name,
-          quantity: current.quantity || detail.serving_description || current.quantity,
-          calories: detail.calories ?? current.calories,
-          protein: detail.protein ?? current.protein,
-          carbs: detail.carbs ?? current.carbs,
-          fat: detail.fat ?? current.fat
-        };
-        return next;
-      });
+      const unitCategory: UnitCategory = detail.unit_category ?? "mass";
+      const unitSystem: UnitSystem = "metric";
+      const availableUnits = getUnitMap(unitCategory);
+      const per100 = detail.per_100;
+      const preferredUnit = per100?.unit && availableUnits[per100.unit] ? per100.unit : undefined;
+      const defaultUnit = preferredUnit ?? getDefaultUnit(unitCategory, unitSystem);
+      const initialQuantity = per100?.amount && per100.amount > 0 ? per100.amount : detail.serving_size ?? 1;
+      updateItem(
+        index,
+        {
+          name: detail.name ?? suggestion.name,
+          brand_name: detail.brand_name ?? suggestion.brand_name ?? "",
+          servingSize: detail.serving_size ?? null,
+          servingSizeUnit: detail.serving_size_unit ?? null,
+          per100,
+          unitCategory,
+          unitSystem,
+          selectedUnit: defaultUnit,
+          quantityValue: initialQuantity,
+          quantityInput: formatNumber(initialQuantity),
+          calories: normalizeMacro(detail.calories ?? suggestion.calories),
+          protein: normalizeMacro(detail.protein ?? suggestion.protein),
+          carbs: normalizeMacro(detail.carbs ?? suggestion.carbs),
+          fat: normalizeMacro(detail.fat ?? suggestion.fat)
+        },
+        { recalc: Boolean(detail.per_100), suppressSearch: true }
+      );
     } catch (err) {
       console.error("Failed to load nutrition detail", err);
     }
   };
 
-  const canSaveItem = (item: MealItemInput) =>
+  const canSaveItem = (item: MealItemState) =>
     item.name.trim().length >= 2 && typeof item.calories === "number" && item.calories > 0;
 
   const saveCustomFood = async (index: number) => {
@@ -267,17 +429,27 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
     setIsSubmitting(true);
     setError(null);
 
-    const payload = items.filter(
-      (item) => item.name.trim() && typeof item.calories === "number" && item.calories > 0
-    );
-    if (payload.length === 0) {
+    const payloadItems = items
+      .filter((item) => item.name.trim() && typeof item.calories === "number" && item.calories > 0)
+      .map(({ name, brand_name, quantity, notes, calories, protein, carbs, fat }) => ({
+        name,
+        brand_name,
+        quantity,
+        notes,
+        calories,
+        protein,
+        carbs,
+        fat
+      }));
+
+    if (payloadItems.length === 0) {
       setError("Add at least one item with calories before logging the meal.");
       setIsSubmitting(false);
       return;
     }
 
     try {
-      await logMeal(mealName, payload);
+      await logMeal(mealName, payloadItems);
       setItems([{ ...emptyItem }]);
       setSuggestions({});
       setIsSearching({});
@@ -316,7 +488,7 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
                 <input
                   className="input"
                   value={item.name}
-                  onChange={(event) => updateItem(index, "name", event.target.value)}
+                  onChange={(event) => updateItem(index, { name: event.target.value })}
                   placeholder="Greek yogurt"
                 />
                 {isSearching[index] && <div className="autocomplete-status">Searching...</div>}
@@ -350,18 +522,64 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
               <input
                 className="input"
                 value={item.brand_name ?? ""}
-                onChange={(event) => updateItem(index, "brand_name", event.target.value)}
+                onChange={(event) => updateItem(index, { brand_name: event.target.value })}
                 placeholder="Brand name"
               />
             </div>
             <div>
               <label className="label">Quantity</label>
-              <input
-                className="input"
-                value={item.quantity ?? ""}
-                onChange={(event) => updateItem(index, "quantity", event.target.value)}
-                placeholder="1 cup"
-              />
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  className="input"
+                  value={item.quantityInput}
+                  onChange={(event) => handleQuantityValueChange(index, event.target.value)}
+                />
+                <select
+                  className="input"
+                  value={item.selectedUnit}
+                  onChange={(event) => handleUnitChange(index, event.target.value)}
+                >
+                  {getUnitOptions(item.unitCategory, item.unitSystem).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  marginTop: "8px",
+                  borderRadius: "6px",
+                  overflow: "hidden",
+                  border: "1px solid #e5e7eb"
+                }}
+              >
+                {(["metric", "us"] as UnitSystem[]).map((system) => (
+                  <button
+                    key={system}
+                    type="button"
+                    onClick={() => handleUnitSystemChange(index, system)}
+                    style={{
+                      padding: "6px 12px",
+                      border: "none",
+                      cursor: "pointer",
+                      background: item.unitSystem === system ? "#2563eb" : "transparent",
+                      color: item.unitSystem === system ? "#fff" : "#6b7280"
+                    }}
+                  >
+                    {system === "metric" ? "Metric" : "US"}
+                  </button>
+                ))}
+              </div>
+              {item.per100 && (
+                <p className="muted-text" style={{ marginTop: "8px" }}>
+                  Per 100{item.per100.unit}: {formatNumber(item.per100.calories)} kcal · {formatNumber(item.per100.protein)} g protein · {formatNumber(item.per100.carbs)} g carbs · {formatNumber(item.per100.fat)} g fat
+                </p>
+              )}
             </div>
           </div>
           <div className="meal-grid" style={{ marginTop: "12px" }}>
@@ -370,12 +588,10 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
                 <div key={key}>
                   <label className="label">{label}</label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
                     className="input"
-                    value={item[key as keyof MealItemInput] ?? ""}
-                    onChange={(event) => updateItem(index, key as keyof MealItemInput, event.target.value)}
+                    value={formatNumber(item[key as keyof MealItemInput] as number | undefined)}
+                    readOnly
                   />
                 </div>
               )

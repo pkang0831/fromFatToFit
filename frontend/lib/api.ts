@@ -32,6 +32,15 @@ export interface MicronutrientEntry {
   label: string;
 }
 
+export interface FoodPerHundred {
+  unit: string;
+  amount: number;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+}
+
 export interface FoodNutritionDetail {
   id?: number;
   provider: string;
@@ -46,6 +55,8 @@ export interface FoodNutritionDetail {
   carbs?: number | null;
   fat?: number | null;
   micronutrients: Record<string, MicronutrientEntry>;
+  per_100: FoodPerHundred;
+  unit_category: "mass" | "volume";
 }
 
 export interface DashboardData {
