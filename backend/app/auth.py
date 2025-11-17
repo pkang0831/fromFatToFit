@@ -9,7 +9,11 @@ from typing import Optional
 
 from . import models
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt", "bcrypt_sha256"],
+    deprecated="auto",
+    bcrypt_sha256__deprecated=True,
+)
 
 
 def hash_password(password: str) -> str:

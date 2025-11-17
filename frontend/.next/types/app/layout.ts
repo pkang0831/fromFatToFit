@@ -1,4 +1,4 @@
-// File: /Users/pkang/Desktop/fromFatToFit/fromFatToFit/frontend/app/layout.tsx
+// File: /Users/RBIPK031/Desktop/temp/fromFatToFit/frontend/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

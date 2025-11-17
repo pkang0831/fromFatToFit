@@ -9,16 +9,26 @@ import {
   getFoodNutrition,
   logMeal,
   searchFoods,
-  FoodPerHundred
+  FoodPerHundred,
+  FoodPerGram
 } from "@/lib/api";
 
 interface MealFormProps {
   onLogged: () => Promise<void> | void;
   initialMealName?: string;
+  date?: string; // 선택된 날짜 (YYYY-MM-DD 형식)
 }
 
 type UnitSystem = "metric" | "us";
 type UnitCategory = "mass" | "volume";
+const MACRO_KEYS = ["calories", "protein", "carbs", "fat"] as const;
+type MacroKey = (typeof MACRO_KEYS)[number];
+const MACRO_LABELS: Record<MacroKey, string> = {
+  calories: "Calories",
+  protein: "Protein (g)",
+  carbs: "Carbs (g)",
+  fat: "Fat (g)"
+};
 
 interface UnitOption {
   value: string;
@@ -77,13 +87,43 @@ const formatNumber = (value?: number | null, decimals = 2): string => {
 const normalizeMacro = (value?: number | null): number | undefined =>
   value === null || value === undefined ? undefined : value;
 
+const sanitizeQuantityInput = (rawValue: string): { display: string; numeric: number } => {
+  const cleaned = rawValue.replace(/[^0-9.,]/g, "");
+  const normalized = cleaned.replace(",", ".");
+  if (normalized === "" || normalized === ".") {
+    return { display: "", numeric: NaN };
+  }
+  const numeric = Number(normalized);
+  return { display: normalized, numeric };
+};
+
 const calculateMacros = (
   per100: FoodPerHundred | undefined,
   category: UnitCategory,
   unit: string,
-  quantity: number
+  quantity: number,
+  perGram?: FoodPerGram | null
 ) => {
-  if (!per100 || quantity <= 0) {
+  if (quantity <= 0) {
+    return { calories: undefined, protein: undefined, carbs: undefined, fat: undefined };
+  }
+
+  if (category === "mass" && perGram) {
+    const option = MASS_UNIT_MAP[unit];
+    if (option) {
+      const grams = option.factor * quantity;
+      const multiply = (value?: number | null) =>
+        value === undefined || value === null ? undefined : value * grams;
+      return {
+        calories: multiply(perGram.calories),
+        protein: multiply(perGram.protein),
+        carbs: multiply(perGram.carbs),
+        fat: multiply(perGram.fat)
+      };
+    }
+  }
+
+  if (!per100) {
     return { calories: undefined, protein: undefined, carbs: undefined, fat: undefined };
   }
 
@@ -120,8 +160,11 @@ interface MealItemState extends MealItemInput {
   quantityValue: number;
   quantityInput: string;
   per100?: FoodPerHundred;
+  perGram?: FoodPerGram | null;
   servingSize?: number | null;
   servingSizeUnit?: string | null;
+  manualMacros?: Partial<Record<MacroKey, boolean>>;
+  manualValues?: Partial<Record<MacroKey, string>>;
 }
 
 const emptyItem: MealItemState = {
@@ -139,7 +182,10 @@ const emptyItem: MealItemState = {
   quantityValue: 1,
   quantityInput: "1",
   servingSize: null,
-  servingSizeUnit: null
+  servingSizeUnit: null,
+  perGram: null,
+  manualMacros: undefined,
+  manualValues: undefined
 };
 
 type SaveState = {
@@ -147,7 +193,7 @@ type SaveState = {
   message?: string;
 };
 
-export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealFormProps) {
+export default function MealForm({ onLogged, initialMealName = "Meal 1", date }: MealFormProps) {
   const [mealName, setMealName] = useState(initialMealName);
   const [items, setItems] = useState<MealItemState[]>([{ ...emptyItem }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -167,7 +213,23 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
       let merged = { ...next[index], ...updates };
       if (options.recalc) {
         const quantityValue = merged.quantityValue ?? 0;
-        const macros = calculateMacros(merged.per100, merged.unitCategory, merged.selectedUnit, quantityValue);
+        const macros = calculateMacros(
+          merged.per100,
+          merged.unitCategory,
+          merged.selectedUnit,
+          quantityValue,
+          merged.perGram
+        );
+        const manual = merged.manualMacros ?? {};
+        const applied: Partial<MealItemState> = {};
+        MACRO_KEYS.forEach((key) => {
+          if (!manual[key] && macros[key] !== undefined) {
+            applied[key] = macros[key];
+          }
+        });
+        if (!merged.manualMacros || Object.keys(merged.manualMacros).length === 0) {
+          merged.manualValues = undefined;
+        }
         const quantityText = quantityValue > 0 ? `${formatNumber(quantityValue)} ${merged.selectedUnit}` : "";
         const existingInput = merged.quantityInput ?? "";
         const quantityInput =
@@ -178,7 +240,7 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
               : existingInput;
         merged = {
           ...merged,
-          ...macros,
+          ...applied,
           quantity: quantityText,
           quantityInput
         };
@@ -201,20 +263,55 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
   };
 
   const handleQuantityValueChange = (index: number, rawValue: string) => {
-    const numeric = Number(rawValue);
-    const quantity = Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
-    updateItem(index, { quantityValue: quantity, quantityInput: rawValue }, { recalc: true });
+    const { display, numeric } = sanitizeQuantityInput(rawValue);
+    const quantity = Number.isFinite(numeric) && numeric >= 0 ? numeric : 0;
+    updateItem(
+      index,
+      {
+        quantityValue: quantity,
+        quantityInput: display,
+        manualMacros: undefined,
+        manualValues: undefined
+      },
+      { recalc: true }
+    );
   };
 
   const handleUnitChange = (index: number, unit: string) => {
-    updateItem(index, { selectedUnit: unit }, { recalc: true });
+    updateItem(index, { selectedUnit: unit, manualMacros: undefined, manualValues: undefined }, { recalc: true });
   };
 
   const handleUnitSystemChange = (index: number, system: UnitSystem) => {
     const current = items[index];
     if (!current) return;
     const nextUnit = getDefaultUnit(current.unitCategory, system);
-    updateItem(index, { unitSystem: system, selectedUnit: nextUnit }, { recalc: true });
+    updateItem(index, { unitSystem: system, selectedUnit: nextUnit, manualMacros: undefined, manualValues: undefined }, { recalc: true });
+  };
+
+  const handleMacroInputChange = (index: number, key: MacroKey, rawValue: string) => {
+    const current = items[index];
+    if (!current) return;
+    const { display, numeric } = sanitizeQuantityInput(rawValue);
+    const manual = { ...(current.manualMacros ?? {}) };
+    const manualValues = { ...(current.manualValues ?? {}) };
+    if (display === "") {
+      delete manual[key];
+      delete manualValues[key];
+    } else {
+      manual[key] = true;
+      manualValues[key] = display;
+    }
+    const cleanedManual = Object.keys(manual).length > 0 ? manual : undefined;
+    const cleanedValues = Object.keys(manualValues).length > 0 ? manualValues : undefined;
+    updateItem(
+      index,
+      {
+        [key]: Number.isFinite(numeric) ? numeric : undefined,
+        manualMacros: cleanedManual,
+        manualValues: cleanedValues
+      },
+      { suppressSearch: true, recalc: cleanedManual === undefined }
+    );
   };
 
   const addItem = () => {
@@ -327,7 +424,21 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
       protein: normalizeMacro(suggestion.protein),
       carbs: normalizeMacro(suggestion.carbs),
       fat: normalizeMacro(suggestion.fat),
-      quantity: suggestion.serving_description ?? ""
+      quantity: suggestion.serving_description ?? "",
+      perGram:
+        suggestion.kcal_per_g !== undefined ||
+        suggestion.protein_per_g !== undefined ||
+        suggestion.carb_per_g !== undefined ||
+        suggestion.fat_per_g !== undefined
+          ? {
+              calories: normalizeMacro(suggestion.kcal_per_g),
+              protein: normalizeMacro(suggestion.protein_per_g),
+              carbs: normalizeMacro(suggestion.carb_per_g),
+              fat: normalizeMacro(suggestion.fat_per_g)
+            }
+          : null,
+      manualMacros: undefined,
+      manualValues: undefined
     }, { suppressSearch: true });
     setSuggestions((prev) => {
       const next = { ...prev };
@@ -336,11 +447,36 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
     });
 
     try {
-      const detail = await getFoodNutrition(suggestion.id);
+      console.log("applySuggestion: fetching nutrition for", {
+        id: suggestion.id,
+        name: suggestion.name,
+        provider: suggestion.provider,
+        provider_food_id: suggestion.provider_food_id
+      });
+      const detail = await getFoodNutrition(suggestion.id, suggestion.provider);
+      console.log("applySuggestion: received detail", {
+        name: detail.name,
+        calories: detail.calories
+      });
       const unitCategory: UnitCategory = detail.unit_category ?? "mass";
       const unitSystem: UnitSystem = "metric";
       const availableUnits = getUnitMap(unitCategory);
       const per100 = detail.per_100;
+      let perGram = detail.per_gram;
+      if (
+        !perGram &&
+        per100 &&
+        per100.amount &&
+        per100.amount > 0 &&
+        detail.unit_category === "mass"
+      ) {
+        perGram = {
+          calories: per100.calories != null ? per100.calories / per100.amount : null,
+          protein: per100.protein != null ? per100.protein / per100.amount : null,
+          carbs: per100.carbs != null ? per100.carbs / per100.amount : null,
+          fat: per100.fat != null ? per100.fat / per100.amount : null
+        };
+      }
       const preferredUnit = per100?.unit && availableUnits[per100.unit] ? per100.unit : undefined;
       const defaultUnit = preferredUnit ?? getDefaultUnit(unitCategory, unitSystem);
       const initialQuantity = per100?.amount && per100.amount > 0 ? per100.amount : detail.serving_size ?? 1;
@@ -352,6 +488,7 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
           servingSize: detail.serving_size ?? null,
           servingSizeUnit: detail.serving_size_unit ?? null,
           per100,
+          perGram: perGram ?? null,
           unitCategory,
           unitSystem,
           selectedUnit: defaultUnit,
@@ -360,7 +497,9 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
           calories: normalizeMacro(detail.calories ?? suggestion.calories),
           protein: normalizeMacro(detail.protein ?? suggestion.protein),
           carbs: normalizeMacro(detail.carbs ?? suggestion.carbs),
-          fat: normalizeMacro(detail.fat ?? suggestion.fat)
+          fat: normalizeMacro(detail.fat ?? suggestion.fat),
+          manualMacros: undefined,
+          manualValues: undefined
         },
         { recalc: Boolean(detail.per_100), suppressSearch: true }
       );
@@ -449,7 +588,7 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
     }
 
     try {
-      await logMeal(mealName, payloadItems);
+      await logMeal(mealName, payloadItems, date);
       setItems([{ ...emptyItem }]);
       setSuggestions({});
       setIsSearching({});
@@ -530,9 +669,9 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
               <label className="label">Quantity</label>
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.,]?[0-9]*"
                   className="input"
                   value={item.quantityInput}
                   onChange={(event) => handleQuantityValueChange(index, event.target.value)}
@@ -583,19 +722,23 @@ export default function MealForm({ onLogged, initialMealName = "Meal 1" }: MealF
             </div>
           </div>
           <div className="meal-grid" style={{ marginTop: "12px" }}>
-            {[{ key: "calories", label: "Calories" }, { key: "protein", label: "Protein (g)" }, { key: "carbs", label: "Carbs (g)" }, { key: "fat", label: "Fat (g)" }].map(
-              ({ key, label }) => (
-                <div key={key}>
-                  <label className="label">{label}</label>
-                  <input
-                    type="text"
-                    className="input"
-                    value={formatNumber(item[key as keyof MealItemInput] as number | undefined)}
-                    readOnly
-                  />
-                </div>
-              )
-            )}
+            {MACRO_KEYS.map((key) => (
+              <div key={key}>
+                <label className="label">{MACRO_LABELS[key]}</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.,]?[0-9]*"
+                  className="input"
+                  value={
+                    item.manualValues?.[key] !== undefined
+                      ? item.manualValues[key] ?? ""
+                      : formatNumber(item[key])
+                  }
+                  onChange={(event) => handleMacroInputChange(index, key, event.target.value)}
+                />
+              </div>
+            ))}
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px" }}>
             <button

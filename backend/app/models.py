@@ -26,12 +26,19 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     daily_calorie_target = Column(Integer, nullable=False, default=2000)
+    height_cm = Column(Float, nullable=True)  # 키 (cm)
+    weight_kg = Column(Float, nullable=True)  # 몸무게 (kg)
+    age = Column(Integer, nullable=True)  # 나이
+    gender = Column(String(10), nullable=True)  # 성별: 'male' or 'female'
+    activity_level = Column(String(20), nullable=True, default="sedentary")  # 활동 수준: 'sedentary', 'light', 'moderate', 'heavy', 'athlete'
     created_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
 
     sessions = relationship("SessionToken", back_populates="user", cascade="all, delete-orphan")
     meals = relationship("Meal", back_populates="user", cascade="all, delete-orphan")
     summaries = relationship("DailySummary", back_populates="user", cascade="all, delete-orphan")
     weight_logs = relationship("WeightLog", back_populates="user", cascade="all, delete-orphan")
+    workouts = relationship("WorkoutLog", back_populates="user", cascade="all, delete-orphan")
+    body_fat_analyses = relationship("BodyFatAnalysis", back_populates="user", cascade="all, delete-orphan")
 
 
 class SessionToken(Base):
@@ -146,3 +153,33 @@ class WeightLog(Base):
     created_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="weight_logs")
+
+
+class WorkoutLog(Base):
+    __tablename__ = "workout_logs"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    date = Column(Date, default=dt.date.today, nullable=False)
+    activity_type = Column(String(100), nullable=False)  # 예: "Running", "Weight Training", "Yoga"
+    duration_minutes = Column(Integer, nullable=True)  # 운동 시간 (분)
+    calories_burned = Column(Float, nullable=True)  # 소모 칼로리
+    distance_km = Column(Float, nullable=True)  # 거리 (km, 러닝/사이클링 등)
+    notes = Column(Text, nullable=True)  # 메모
+    created_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="workouts")
+
+
+class BodyFatAnalysis(Base):
+    __tablename__ = "body_fat_analyses"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    date = Column(Date, default=dt.date.today, nullable=False)
+    image_path = Column(String(500), nullable=False)  # 업로드된 이미지 경로
+    body_fat_percentage = Column(Float, nullable=True)  # AI로 계산된 체지방률
+    percentile_rank = Column(Float, nullable=True)  # 상위 몇%인지
+    created_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="body_fat_analyses")
