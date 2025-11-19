@@ -262,6 +262,36 @@ export async function deleteMeal(mealId: number): Promise<void> {
   });
 }
 
+export interface MealUpdate {
+  name?: string;
+  date?: string;
+}
+
+export async function updateMeal(mealId: number, update: MealUpdate): Promise<DashboardData["meals"][number]> {
+  return request<DashboardData["meals"][number]>(`/meals/${mealId}`, {
+    method: "PATCH",
+    body: JSON.stringify(update)
+  });
+}
+
+export interface MealItemUpdate {
+  name?: string;
+  quantity?: string;
+}
+
+export async function updateMealItem(mealId: number, itemId: number, update: MealItemUpdate): Promise<void> {
+  await request(`/meals/${mealId}/items/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify(update)
+  });
+}
+
+export async function deleteMealItem(mealId: number, itemId: number): Promise<void> {
+  await request(`/meals/${mealId}/items/${itemId}`, {
+    method: "DELETE"
+  });
+}
+
 export async function searchFoods(query: string, limit = 10): Promise<FoodSuggestion[]> {
   const params = new URLSearchParams({ query, limit: String(limit) });
   const response = await request<{ query: string; results: FoodSuggestion[] }>(

@@ -3,9 +3,122 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import MealForm from "@/components/MealForm";
-import { DashboardData, deleteMeal, updateCalorieTarget, updateUserProfile, getDashboard, getRecentMeals } from "@/lib/api";
+import { DashboardData, deleteMeal, updateMeal, updateMealItem, deleteMealItem, updateCalorieTarget, updateUserProfile, getDashboard, getRecentMeals, MealUpdate, MealItemUpdate, searchFoods, FoodSuggestion, getFoodNutrition, FoodPerHundred, FoodPerGram } from "@/lib/api";
 import DailyTrendChart, { type TrendDatum } from "@/components/dashboard/DailyTrendChart";
 import FatLossProjectionChart from "@/components/dashboard/FatLossProjectionChart";
+
+// Unit 관련 상수 및 함수 (MealForm.tsx에서 가져옴)
+type UnitSystem = "metric" | "us";
+type UnitCategory = "mass" | "volume";
+
+interface UnitOption {
+  value: string;
+  label: string;
+  system: UnitSystem;
+  factor: number; // grams or milliliters per unit
+}
+
+const MASS_UNIT_OPTIONS: UnitOption[] = [
+  { value: "g", label: "g", system: "metric", factor: 1 },
+  { value: "kg", label: "kg", system: "metric", factor: 1000 },
+  { value: "mg", label: "mg", system: "metric", factor: 0.001 },
+  { value: "oz", label: "oz", system: "us", factor: 28.3495 },
+  { value: "lb", label: "lb", system: "us", factor: 453.592 }
+];
+
+const VOLUME_UNIT_OPTIONS: UnitOption[] = [
+  { value: "ml", label: "mL", system: "metric", factor: 1 },
+  { value: "l", label: "L", system: "metric", factor: 1000 },
+  { value: "cup", label: "cup", system: "us", factor: 240 },
+  { value: "floz", label: "fl oz", system: "us", factor: 29.5735 },
+  { value: "tbsp", label: "tbsp", system: "us", factor: 15 },
+  { value: "tsp", label: "tsp", system: "us", factor: 5 }
+];
+
+const MASS_UNIT_MAP = MASS_UNIT_OPTIONS.reduce<Record<string, UnitOption>>((acc, option) => {
+  acc[option.value] = option;
+  return acc;
+}, {});
+
+const VOLUME_UNIT_MAP = VOLUME_UNIT_OPTIONS.reduce<Record<string, UnitOption>>((acc, option) => {
+  acc[option.value] = option;
+  return acc;
+}, {});
+
+const getUnitMap = (category: UnitCategory): Record<string, UnitOption> =>
+  category === "mass" ? MASS_UNIT_MAP : VOLUME_UNIT_MAP;
+
+const getDefaultUnit = (category: UnitCategory, system: UnitSystem): string => {
+  const options = category === "mass" ? MASS_UNIT_OPTIONS : VOLUME_UNIT_OPTIONS;
+  const filtered = options.filter((option) => option.system === system);
+  return filtered.length > 0 ? filtered[0].value : category === "mass" ? "g" : "ml";
+};
+
+const sanitizeQuantityInput = (rawValue: string): { display: string; numeric: number } => {
+  const cleaned = rawValue.replace(/[^0-9.,]/g, "");
+  const normalized = cleaned.replace(",", ".");
+  if (normalized === "" || normalized === ".") {
+    return { display: "", numeric: NaN };
+  }
+  const numeric = Number(normalized);
+  return { display: normalized, numeric };
+};
+
+const calculateMacros = (
+  per100: FoodPerHundred | undefined,
+  category: UnitCategory,
+  unit: string,
+  quantity: number,
+  perGram?: FoodPerGram | null
+) => {
+  if (quantity <= 0) {
+    return { calories: undefined, protein: undefined, carbs: undefined, fat: undefined };
+  }
+
+  if (category === "mass" && perGram) {
+    const option = MASS_UNIT_MAP[unit];
+    if (option) {
+      const grams = option.factor * quantity;
+      const multiply = (value?: number | null) =>
+        value === undefined || value === null ? undefined : value * grams;
+      return {
+        calories: multiply(perGram.calories),
+        protein: multiply(perGram.protein),
+        carbs: multiply(perGram.carbs),
+        fat: multiply(perGram.fat)
+      };
+    }
+  }
+
+  if (!per100) {
+    return { calories: undefined, protein: undefined, carbs: undefined, fat: undefined };
+  }
+
+  const map = getUnitMap(category);
+  const option = map[unit];
+  if (!option) {
+    const scale = per100.amount ? quantity / per100.amount : quantity;
+    const multiply = (value?: number | null) => (value === undefined || value === null ? undefined : value * scale);
+    return {
+      calories: multiply(per100.calories),
+      protein: multiply(per100.protein),
+      carbs: multiply(per100.carbs),
+      fat: multiply(per100.fat)
+    };
+  }
+
+  const basePerUnit = option.factor / per100.amount;
+  const scale = basePerUnit * quantity;
+
+  const multiply = (value?: number | null) => (value === undefined || value === null ? undefined : value * scale);
+
+  return {
+    calories: multiply(per100.calories),
+    protein: multiply(per100.protein),
+    carbs: multiply(per100.carbs),
+    fat: multiply(per100.fat)
+  };
+};
 
 // BMR 계산 함수 (Mifflin-St Jeor 공식)
 function calculateBMR(
@@ -273,6 +386,28 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
 
   const [isMealFormOpen, setIsMealFormOpen] = useState(false);
   const [deletingMealId, setDeletingMealId] = useState<number | null>(null);
+  const [editingMealId, setEditingMealId] = useState<number | null>(null);
+  const [editingMealName, setEditingMealName] = useState<string>("");
+  const [isUpdatingMeal, setIsUpdatingMeal] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editingItemName, setEditingItemName] = useState<string>("");
+  const [editingItemQuantity, setEditingItemQuantity] = useState<string>("");
+  const [editingItemQuantityValue, setEditingItemQuantityValue] = useState<number>(0);
+  const [editingItemUnit, setEditingItemUnit] = useState<string>("g");
+  const [editingItemUnitCategory, setEditingItemUnitCategory] = useState<UnitCategory>("mass");
+  const [editingItemUnitSystem, setEditingItemUnitSystem] = useState<UnitSystem>("metric");
+  const [editingItemPer100, setEditingItemPer100] = useState<FoodPerHundred | undefined>(undefined);
+  const [editingItemPerGram, setEditingItemPerGram] = useState<FoodPerGram | null>(null);
+  const [editingItemCalories, setEditingItemCalories] = useState<number | undefined>(undefined);
+  const [editingItemProtein, setEditingItemProtein] = useState<number | undefined>(undefined);
+  const [editingItemCarbs, setEditingItemCarbs] = useState<number | undefined>(undefined);
+  const [editingItemFat, setEditingItemFat] = useState<number | undefined>(undefined);
+  const [itemSuggestions, setItemSuggestions] = useState<FoodSuggestion[]>([]);
+  const [isSearchingItem, setIsSearchingItem] = useState(false);
+  const [showItemSuggestions, setShowItemSuggestions] = useState(false);
+  const itemSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const itemInputRef = useRef<HTMLInputElement | null>(null);
+  const itemSuggestionsRef = useRef<HTMLDivElement | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isEditingTarget, setIsEditingTarget] = useState(false);
   const [targetInput, setTargetInput] = useState<string>("");
@@ -572,6 +707,305 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
         setActionError(err instanceof Error ? err.message : "Unable to remove meal.");
       } finally {
         setDeletingMealId(null);
+      }
+    },
+    [onRefresh, refreshRecentMeals]
+  );
+
+  const handleStartEditMeal = useCallback((meal: DashboardData["meals"][number]) => {
+    setEditingMealId(meal.id);
+    setEditingMealName(meal.name);
+    setEditingItemId(null);
+    setEditingItemName("");
+    setEditingItemQuantity("");
+  }, []);
+
+  const handleCancelEditMeal = useCallback(() => {
+    setEditingMealId(null);
+    setEditingMealName("");
+    setEditingItemId(null);
+    setEditingItemName("");
+    setEditingItemQuantity("");
+  }, []);
+
+  const handleSaveMeal = useCallback(
+    async (mealId: number) => {
+      setActionError(null);
+      setIsUpdatingMeal(true);
+      try {
+        const update: MealUpdate = {};
+        if (editingMealName.trim() !== "") {
+          update.name = editingMealName.trim();
+        }
+        await updateMeal(mealId, update);
+        await onRefresh();
+        await refreshRecentMeals();
+        setEditingMealId(null);
+        setEditingMealName("");
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "Failed to update meal.");
+      } finally {
+        setIsUpdatingMeal(false);
+      }
+    },
+    [editingMealName, onRefresh, refreshRecentMeals]
+  );
+
+  const handleStartEditItem = useCallback((item: DashboardData["meals"][number]["items"][number]) => {
+    setEditingItemId(item.id);
+    setEditingItemName(item.name);
+    
+    // quantity 파싱 (예: "100g" -> 100, "g")
+    const quantityStr = item.quantity || "100g";
+    const match = quantityStr.match(/^([\d.,]+)\s*([a-zA-Z]+)$/);
+    if (match) {
+      const value = parseFloat(match[1].replace(",", "."));
+      const unit = match[2].toLowerCase();
+      setEditingItemQuantityValue(value);
+      setEditingItemQuantity(value.toString());
+      setEditingItemUnit(unit);
+      setEditingItemUnitCategory("mass"); // 기본값, 나중에 음식 정보 로드 시 업데이트
+      setEditingItemUnitSystem("metric");
+    } else {
+      setEditingItemQuantityValue(100);
+      setEditingItemQuantity("100");
+      setEditingItemUnit("g");
+      setEditingItemUnitCategory("mass");
+      setEditingItemUnitSystem("metric");
+    }
+    
+    // 기존 매크로 값 설정
+    const itemTotals = getItemTotals(item);
+    setEditingItemCalories(itemTotals.calories);
+    setEditingItemProtein(itemTotals.protein);
+    setEditingItemCarbs(itemTotals.carbs);
+    setEditingItemFat(itemTotals.fat);
+    
+    setEditingItemPer100(undefined);
+    setEditingItemPerGram(null);
+    setItemSuggestions([]);
+    setShowItemSuggestions(false);
+  }, []);
+
+  const handleCancelEditItem = useCallback(() => {
+    setEditingItemId(null);
+    setEditingItemName("");
+    setEditingItemQuantity("");
+    setEditingItemQuantityValue(0);
+    setEditingItemUnit("g");
+    setEditingItemUnitCategory("mass");
+    setEditingItemUnitSystem("metric");
+    setEditingItemPer100(undefined);
+    setEditingItemPerGram(null);
+    setEditingItemCalories(undefined);
+    setEditingItemProtein(undefined);
+    setEditingItemCarbs(undefined);
+    setEditingItemFat(undefined);
+    setItemSuggestions([]);
+    setShowItemSuggestions(false);
+  }, []);
+
+  const triggerItemSearch = useCallback((term: string) => {
+    if (itemSearchTimer.current) {
+      clearTimeout(itemSearchTimer.current);
+    }
+
+    const trimmed = term.trim();
+    if (trimmed.length < 2) {
+      setItemSuggestions([]);
+      setShowItemSuggestions(false);
+      setIsSearchingItem(false);
+      return;
+    }
+
+    setIsSearchingItem(true);
+    setShowItemSuggestions(true);
+    itemSearchTimer.current = setTimeout(async () => {
+      try {
+        const results = await searchFoods(trimmed, 10);
+        setItemSuggestions(results);
+      } catch (err) {
+        setItemSuggestions([]);
+        console.error("Food search failed", err);
+      } finally {
+        setIsSearchingItem(false);
+        itemSearchTimer.current = null;
+      }
+    }, 600);
+  }, []);
+
+  const handleItemNameChange = useCallback((value: string) => {
+    setEditingItemName(value);
+    triggerItemSearch(value);
+  }, [triggerItemSearch]);
+
+  const handleSelectSuggestion = useCallback(async (suggestion: FoodSuggestion) => {
+    setEditingItemName(suggestion.name);
+    setItemSuggestions([]);
+    setShowItemSuggestions(false);
+
+    // 음식 영양 정보 가져오기
+    try {
+      const detail = await getFoodNutrition(suggestion.id, suggestion.provider);
+      const unitCategory: UnitCategory = detail.unit_category ?? "mass";
+      const unitSystem: UnitSystem = "metric";
+      const availableUnits = getUnitMap(unitCategory);
+      const per100 = detail.per_100;
+      let perGram = detail.per_gram;
+      
+      if (
+        !perGram &&
+        per100 &&
+        per100.amount &&
+        per100.amount > 0 &&
+        detail.unit_category === "mass"
+      ) {
+        perGram = {
+          calories: per100.calories != null ? per100.calories / per100.amount : null,
+          protein: per100.protein != null ? per100.protein / per100.amount : null,
+          carbs: per100.carbs != null ? per100.carbs / per100.amount : null,
+          fat: per100.fat != null ? per100.fat / per100.amount : null
+        };
+      }
+      
+      const preferredUnit = per100?.unit && availableUnits[per100.unit] ? per100.unit : undefined;
+      const defaultUnit = preferredUnit ?? getDefaultUnit(unitCategory, unitSystem);
+      const initialQuantity = per100?.amount && per100.amount > 0 ? per100.amount : detail.serving_size ?? 100;
+
+      setEditingItemUnitCategory(unitCategory);
+      setEditingItemUnitSystem(unitSystem);
+      setEditingItemUnit(defaultUnit);
+      setEditingItemPer100(per100);
+      setEditingItemPerGram(perGram ?? null);
+      setEditingItemQuantityValue(initialQuantity);
+      setEditingItemQuantity(initialQuantity.toString());
+
+      // 초기 매크로 계산
+      const calculated = calculateMacros(per100, unitCategory, defaultUnit, initialQuantity, perGram);
+      setEditingItemCalories(calculated.calories);
+      setEditingItemProtein(calculated.protein);
+      setEditingItemCarbs(calculated.carbs);
+      setEditingItemFat(calculated.fat);
+    } catch (err) {
+      console.error("Failed to load nutrition detail", err);
+    }
+  }, []);
+
+  const handleQuantityChange = useCallback((value: string) => {
+    const { display, numeric } = sanitizeQuantityInput(value);
+    const quantity = Number.isFinite(numeric) && numeric >= 0 ? numeric : 0;
+    setEditingItemQuantity(display);
+    setEditingItemQuantityValue(quantity);
+
+    // 매크로 자동 계산
+    const calculated = calculateMacros(
+      editingItemPer100,
+      editingItemUnitCategory,
+      editingItemUnit,
+      quantity,
+      editingItemPerGram
+    );
+    setEditingItemCalories(calculated.calories);
+    setEditingItemProtein(calculated.protein);
+    setEditingItemCarbs(calculated.carbs);
+    setEditingItemFat(calculated.fat);
+  }, [editingItemPer100, editingItemUnitCategory, editingItemUnit, editingItemPerGram]);
+
+  const handleUnitChange = useCallback((unit: string) => {
+    setEditingItemUnit(unit);
+    
+    // 매크로 자동 계산
+    const calculated = calculateMacros(
+      editingItemPer100,
+      editingItemUnitCategory,
+      unit,
+      editingItemQuantityValue,
+      editingItemPerGram
+    );
+    setEditingItemCalories(calculated.calories);
+    setEditingItemProtein(calculated.protein);
+    setEditingItemCarbs(calculated.carbs);
+    setEditingItemFat(calculated.fat);
+  }, [editingItemPer100, editingItemUnitCategory, editingItemQuantityValue, editingItemPerGram]);
+
+  // 외부 클릭 시 제안 목록 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        itemInputRef.current &&
+        !itemInputRef.current.contains(event.target as Node) &&
+        itemSuggestionsRef.current &&
+        !itemSuggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowItemSuggestions(false);
+      }
+    };
+
+    if (showItemSuggestions) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showItemSuggestions]);
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (itemSearchTimer.current) {
+        clearTimeout(itemSearchTimer.current);
+      }
+    };
+  }, []);
+
+  const handleSaveItem = useCallback(
+    async (mealId: number, itemId: number) => {
+      setActionError(null);
+      try {
+        const update: MealItemUpdate = {};
+        if (editingItemName.trim() !== "") {
+          update.name = editingItemName.trim();
+        }
+        // quantity를 "값 + 단위" 형식으로 저장 (예: "100g")
+        if (editingItemQuantityValue > 0 && editingItemUnit) {
+          update.quantity = `${editingItemQuantityValue}${editingItemUnit}`;
+        } else if (editingItemQuantity.trim() !== "") {
+          update.quantity = editingItemQuantity.trim();
+        }
+        await updateMealItem(mealId, itemId, update);
+        await onRefresh();
+        await refreshRecentMeals();
+        setEditingItemId(null);
+        setEditingItemName("");
+        setEditingItemQuantity("");
+        setEditingItemQuantityValue(0);
+        setEditingItemUnit("g");
+        setEditingItemUnitCategory("mass");
+        setEditingItemUnitSystem("metric");
+        setEditingItemPer100(undefined);
+        setEditingItemPerGram(null);
+        setEditingItemCalories(undefined);
+        setEditingItemProtein(undefined);
+        setEditingItemCarbs(undefined);
+        setEditingItemFat(undefined);
+        setItemSuggestions([]);
+        setShowItemSuggestions(false);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "Failed to update food item.");
+      }
+    },
+    [editingItemName, editingItemQuantity, editingItemQuantityValue, editingItemUnit, onRefresh, refreshRecentMeals]
+  );
+
+  const handleDeleteMealItem = useCallback(
+    async (mealId: number, itemId: number) => {
+      setActionError(null);
+      try {
+        await deleteMealItem(mealId, itemId);
+        await onRefresh();
+        await refreshRecentMeals();
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "Failed to delete food item.");
       }
     },
     [onRefresh, refreshRecentMeals]
@@ -1251,23 +1685,76 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
             {mealsByDate.map((meal, index) => {
               const totals = getMealTotals(meal);
               const mealName = meal.name.trim();
+              const isEditing = editingMealId === meal.id;
               return (
                 <article key={meal.id} className="template-one__meal-card">
                   <header className="template-one__meal-card-header">
-                    <div className="template-one__meal-heading">
-                      <h3>{`Meal ${index + 1}`}</h3>
-                      {mealName && <span className="template-one__meal-subtitle">{mealName}</span>}
-                    </div>
+                    {isEditing ? (
+                      <div className="template-one__meal-heading" style={{ flex: 1 }}>
+                        <input
+                          type="text"
+                          value={editingMealName}
+                          onChange={(e) => setEditingMealName(e.target.value)}
+                          placeholder="Meal name"
+                          style={{
+                            width: "100%",
+                            padding: "4px 8px",
+                            fontSize: "1rem",
+                            border: "1px solid #ddd",
+                            borderRadius: "4px",
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="template-one__meal-heading">
+                        <h3>{`Meal ${index + 1}`}</h3>
+                        {mealName && <span className="template-one__meal-subtitle">{mealName}</span>}
+                      </div>
+                    )}
                     <div className="template-one__meal-meta">
-                      <time dateTime={toISODate(meal.date)}>{formatTime(meal.date)}</time>
-                      <button
-                        type="button"
-                        className="template-one__meal-remove"
-                        onClick={() => handleDeleteMeal(meal.id)}
-                        disabled={deletingMealId === meal.id}
-                      >
-                        {deletingMealId === meal.id ? "Removing..." : "Remove"}
-                      </button>
+                      {isEditing ? (
+                        <>
+                          <time dateTime={toISODate(meal.date)}>{formatTime(meal.date)}</time>
+                          <button
+                            type="button"
+                            className="template-one__meal-remove"
+                            onClick={() => handleSaveMeal(meal.id)}
+                            disabled={isUpdatingMeal}
+                            style={{ marginRight: "8px", backgroundColor: "#86a361", color: "white" }}
+                          >
+                            {isUpdatingMeal ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            className="template-one__meal-remove"
+                            onClick={handleCancelEditMeal}
+                            disabled={isUpdatingMeal}
+                            style={{ backgroundColor: "#666", color: "white" }}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <time dateTime={toISODate(meal.date)}>{formatTime(meal.date)}</time>
+                          <button
+                            type="button"
+                            className="template-one__meal-remove"
+                            onClick={() => handleStartEditMeal(meal)}
+                            style={{ marginRight: "8px", backgroundColor: "#86a361", color: "white" }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="template-one__meal-remove"
+                            onClick={() => handleDeleteMeal(meal.id)}
+                            disabled={deletingMealId === meal.id}
+                          >
+                            {deletingMealId === meal.id ? "Removing..." : "Remove"}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </header>
                   <p className="template-one__meal-macros">
@@ -1282,21 +1769,262 @@ export default function TemplateOne({ data, onRefresh }: TemplateOneProps) {
                     <ul className="template-one__meal-items">
                       {meal.items.map((item) => {
                         const itemTotals = getItemTotals(item);
+                        const isEditingItem = isEditing && editingItemId === item.id;
                         return (
-                          <li key={item.id}>
-                            <div className="template-one__meal-item-details">
-                              <p>{item.name}</p>
-                              <div className="template-one__meal-item-meta">
-                                {item.quantity && <span>{item.quantity}</span>}
-                                {item.notes && <span>{item.notes}</span>}
-                              </div>
-                            </div>
-                            <div className="template-one__meal-item-macros">
-                              <strong>{formatNumber(itemTotals.calories)} kcal</strong>
-                              <span>
-                                P {formatNumber(itemTotals.protein, 1)} • C {formatNumber(itemTotals.carbs, 1)} • F {formatNumber(itemTotals.fat, 1)}
-                              </span>
-                            </div>
+                          <li 
+                            key={item.id} 
+                            onClick={isEditing && !isEditingItem ? () => handleStartEditItem(item) : undefined}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              gap: "12px",
+                              cursor: isEditing && !isEditingItem ? "pointer" : "default",
+                              padding: isEditing && !isEditingItem ? "8px" : "0",
+                              borderRadius: isEditing && !isEditingItem ? "4px" : "0",
+                              backgroundColor: isEditing && !isEditingItem ? "#f5f5f5" : "transparent",
+                            }}
+                          >
+                            {isEditingItem ? (
+                              <>
+                                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", position: "relative" }}>
+                                  <input
+                                    ref={itemInputRef}
+                                    type="text"
+                                    value={editingItemName}
+                                    onChange={(e) => handleItemNameChange(e.target.value)}
+                                    placeholder="Food name"
+                                    style={{
+                                      width: "100%",
+                                      padding: "4px 8px",
+                                      fontSize: "1rem",
+                                      border: "1px solid #ddd",
+                                      borderRadius: "4px",
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onFocus={() => {
+                                      if (itemSuggestions.length > 0) {
+                                        setShowItemSuggestions(true);
+                                      }
+                                    }}
+                                  />
+                                  {showItemSuggestions && (itemSuggestions.length > 0 || isSearchingItem) && (
+                                    <div
+                                      ref={itemSuggestionsRef}
+                                      style={{
+                                        position: "absolute",
+                                        top: "100%",
+                                        left: 0,
+                                        right: 0,
+                                        marginTop: "4px",
+                                        backgroundColor: "white",
+                                        border: "1px solid #ddd",
+                                        borderRadius: "4px",
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                                        maxHeight: "200px",
+                                        overflowY: "auto",
+                                        zIndex: 1000,
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {isSearchingItem ? (
+                                        <div style={{ padding: "8px", textAlign: "center", color: "#666" }}>
+                                          Searching...
+                                        </div>
+                                      ) : itemSuggestions.length > 0 ? (
+                                        itemSuggestions.map((suggestion) => (
+                                          <div
+                                            key={`${suggestion.provider}-${suggestion.id}`}
+                                            onClick={() => handleSelectSuggestion(suggestion)}
+                                            style={{
+                                              padding: "8px 12px",
+                                              cursor: "pointer",
+                                              borderBottom: "1px solid #eee",
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.backgroundColor = "white";
+                                            }}
+                                          >
+                                            <div style={{ fontWeight: "bold", fontSize: "0.9rem" }}>
+                                              {suggestion.name}
+                                            </div>
+                                            {suggestion.brand_name && (
+                                              <div style={{ fontSize: "0.75rem", color: "#666", marginTop: "2px" }}>
+                                                {suggestion.brand_name}
+                                              </div>
+                                            )}
+                                            {suggestion.calories !== undefined && (
+                                              <div style={{ fontSize: "0.75rem", color: "#666", marginTop: "2px" }}>
+                                                {Math.round(suggestion.calories)} kcal
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))
+                                      ) : null}
+                                    </div>
+                                  )}
+                                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                    <input
+                                      type="text"
+                                      value={editingItemQuantity}
+                                      onChange={(e) => handleQuantityChange(e.target.value)}
+                                      placeholder="Amount"
+                                      style={{
+                                        flex: 1,
+                                        padding: "4px 8px",
+                                        fontSize: "0.875rem",
+                                        border: "1px solid #ddd",
+                                        borderRadius: "4px",
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <select
+                                      value={editingItemUnit}
+                                      onChange={(e) => handleUnitChange(e.target.value)}
+                                      style={{
+                                        padding: "4px 8px",
+                                        fontSize: "0.875rem",
+                                        border: "1px solid #ddd",
+                                        borderRadius: "4px",
+                                        backgroundColor: "white",
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {(editingItemUnitCategory === "mass" ? MASS_UNIT_OPTIONS : VOLUME_UNIT_OPTIONS)
+                                        .filter((opt) => opt.system === editingItemUnitSystem)
+                                        .map((opt) => (
+                                          <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                          </option>
+                                        ))}
+                                    </select>
+                                  </div>
+                                  {(editingItemCalories !== undefined || editingItemProtein !== undefined || editingItemCarbs !== undefined || editingItemFat !== undefined) && (
+                                    <div style={{ fontSize: "0.75rem", color: "#666", padding: "4px 8px", backgroundColor: "#f9f9f9", borderRadius: "4px" }}>
+                                      {editingItemCalories !== undefined && (
+                                        <span style={{ fontWeight: "bold", marginRight: "8px" }}>
+                                          {Math.round(editingItemCalories)} kcal
+                                        </span>
+                                      )}
+                                      {editingItemProtein !== undefined && (
+                                        <span style={{ marginRight: "8px" }}>
+                                          P {formatNumber(editingItemProtein, 1)}
+                                        </span>
+                                      )}
+                                      {editingItemCarbs !== undefined && (
+                                        <span style={{ marginRight: "8px" }}>
+                                          C {formatNumber(editingItemCarbs, 1)}
+                                        </span>
+                                      )}
+                                      {editingItemFat !== undefined && (
+                                        <span>
+                                          F {formatNumber(editingItemFat, 1)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSaveItem(meal.id, item.id);
+                                    }}
+                                    style={{
+                                      padding: "4px 12px",
+                                      fontSize: "0.75rem",
+                                      backgroundColor: "#86a361",
+                                      color: "white",
+                                      border: "none",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCancelEditItem();
+                                    }}
+                                    style={{
+                                      padding: "4px 12px",
+                                      fontSize: "0.75rem",
+                                      backgroundColor: "#666",
+                                      color: "white",
+                                      border: "none",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteMealItem(meal.id, item.id);
+                                    }}
+                                    style={{
+                                      padding: "4px 8px",
+                                      fontSize: "0.75rem",
+                                      backgroundColor: "#dc3545",
+                                      color: "white",
+                                      border: "none",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                    }}
+                                    title="Delete this food item"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="template-one__meal-item-details" style={{ flex: 1 }}>
+                                  <p>{item.name}</p>
+                                  <div className="template-one__meal-item-meta">
+                                    {item.quantity && <span>{item.quantity}</span>}
+                                    {item.notes && <span>{item.notes}</span>}
+                                  </div>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                  <div className="template-one__meal-item-macros">
+                                    <strong>{formatNumber(itemTotals.calories)} kcal</strong>
+                                    <span>
+                                      P {formatNumber(itemTotals.protein, 1)} • C {formatNumber(itemTotals.carbs, 1)} • F {formatNumber(itemTotals.fat, 1)}
+                                    </span>
+                                  </div>
+                                  {isEditing && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteMealItem(meal.id, item.id);
+                                      }}
+                                      style={{
+                                        padding: "4px 8px",
+                                        fontSize: "0.75rem",
+                                        backgroundColor: "#dc3545",
+                                        color: "white",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                      }}
+                                      title="Delete this food item"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            )}
                           </li>
                         );
                       })}

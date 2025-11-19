@@ -350,6 +350,42 @@ def create_meal(
     return meal
 
 
+@app.patch("/meals/{meal_id}", response_model=schemas.MealOut)
+def update_meal(
+    meal_id: int,
+    meal_update: schemas.MealUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Meal 정보 업데이트 (이름, 날짜)"""
+    meal = (
+        db.query(models.Meal)
+        .filter(models.Meal.id == meal_id, models.Meal.user_id == current_user.id)
+        .first()
+    )
+    if meal is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal not found")
+
+    old_date = meal.date
+    
+    if meal_update.name is not None:
+        meal.name = meal_update.name
+    if meal_update.date is not None:
+        meal.date = meal_update.date
+
+    db.flush()
+    
+    # 날짜가 변경된 경우 두 날짜 모두 재계산
+    if meal_update.date is not None and meal_update.date != old_date:
+        _recalculate_summary(db, current_user, old_date)
+        _recalculate_summary(db, current_user, meal.date)
+    else:
+        _recalculate_summary(db, current_user, meal.date)
+    
+    db.refresh(meal)
+    return meal
+
+
 @app.delete("/meals/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_meal(
     meal_id: int,
@@ -366,6 +402,73 @@ def delete_meal(
 
     meal_date = meal.date
     db.delete(meal)
+    db.flush()
+    _recalculate_summary(db, current_user, meal_date)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.patch("/meals/{meal_id}/items/{item_id}", response_model=schemas.MealItemOut)
+def update_meal_item(
+    meal_id: int,
+    item_id: int,
+    item_update: schemas.MealItemUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Meal item 업데이트 (이름, 양)"""
+    meal = (
+        db.query(models.Meal)
+        .filter(models.Meal.id == meal_id, models.Meal.user_id == current_user.id)
+        .first()
+    )
+    if meal is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal not found")
+
+    meal_item = (
+        db.query(models.MealItem)
+        .filter(models.MealItem.id == item_id, models.MealItem.meal_id == meal_id)
+        .first()
+    )
+    if meal_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal item not found")
+
+    if item_update.name is not None:
+        meal_item.name = item_update.name
+    if item_update.quantity is not None:
+        meal_item.quantity = item_update.quantity
+
+    db.flush()
+    _recalculate_summary(db, current_user, meal.date)
+    db.refresh(meal_item)
+    return meal_item
+
+
+@app.delete("/meals/{meal_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_meal_item(
+    meal_id: int,
+    item_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Meal item 삭제"""
+    meal = (
+        db.query(models.Meal)
+        .filter(models.Meal.id == meal_id, models.Meal.user_id == current_user.id)
+        .first()
+    )
+    if meal is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal not found")
+
+    meal_item = (
+        db.query(models.MealItem)
+        .filter(models.MealItem.id == item_id, models.MealItem.meal_id == meal_id)
+        .first()
+    )
+    if meal_item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal item not found")
+
+    meal_date = meal.date
+    db.delete(meal_item)
     db.flush()
     _recalculate_summary(db, current_user, meal_date)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

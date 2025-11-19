@@ -92,6 +92,16 @@ class MealItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MealUpdate(BaseModel):
+    name: Optional[str] = None
+    date: Optional[dt.date] = None
+
+
+class MealItemUpdate(BaseModel):
+    name: Optional[str] = None
+    quantity: Optional[str] = None
+
+
 class MealOut(BaseModel):
     id: int
     name: str
