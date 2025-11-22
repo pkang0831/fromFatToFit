@@ -1,0 +1,507 @@
+[
+  {
+    "text": "Hello, this is Longa.",
+    "start": 0.315,
+    "duration": 1.498
+  },
+  {
+    "text": "This is the fourth video about a low-carb, high-fat diet.",
+    "start": 1.813,
+    "duration": 3.002
+  },
+  {
+    "text": "In Part 1 of the video, the types of low-carb, high-fat diets are discussed.",
+    "start": 4.815,
+    "duration": 2.355
+  },
+  {
+    "text": "In the second part of the video, a hybrid diet created by mixing two different meal plans is introduced.",
+    "start": 7.17,
+    "duration": 3.65
+  },
+  {
+    "text": "In part 3 of the video, we talked about refined and unrefined foods.",
+    "start": 10.82,
+    "duration": 3.94
+  },
+  {
+    "text": "In this video, we will talk about a balanced diet.",
+    "start": 14.76,
+    "duration": 3.142
+  },
+  {
+    "text": "Since the content of the video is all connected, it is recommended to watch them in order starting from Part 1.",
+    "start": 17.902,
+    "duration": 4.306
+  },
+  {
+    "text": "For those who haven't watched the previous video, the playlist link is available in the top right corner.",
+    "start": 22.208,
+    "duration": 3.606
+  },
+  {
+    "text": "If you click the link, you can view it in order starting from Part 1.",
+    "start": 25.814,
+    "duration": 5.72
+  },
+  {
+    "text": "If you have watched the video in Part 3, you should have understood what refined and unrefined foods are.",
+    "start": 31.534,
+    "duration": 3.944
+  },
+  {
+    "text": "You probably understand that in order to diet, you need to reduce the intake of refined foods and eat unrefined foods.",
+    "start": 35.478,
+    "duration": 5.22
+  },
+  {
+    "text": "At the end of the video, it was mentioned that if you build your diet with unrefined foods, it will naturally become a low-carb, high-fat diet.",
+    "start": 40.698,
+    "duration": 6.004
+  },
+  {
+    "text": "Because I talked about it in the first part of the video.",
+    "start": 46.702,
+    "duration": 3.335
+  },
+  {
+    "text": "A low-carb, high-fat diet refers to a diet in which the calories obtained from fat are higher than those obtained from carbohydrates.",
+    "start": 50.037,
+    "duration": 6.355
+  },
+  {
+    "text": "Carbohydrates provide 4 kcal per gram, and fats provide 9 kcal per gram.",
+    "start": 56.392,
+    "duration": 4.56
+  },
+  {
+    "text": "Even if you eat carbohydrates at twice the amount of fat, the calories from fat are still higher.",
+    "start": 60.952,
+    "duration": 4.88
+  },
+  {
+    "text": "In the third part of the video, regarding unrefined carbohydrates, if they are well digested and absorbed, the carbohydrate content is very low or",
+    "start": 65.832,
+    "duration": 6.444
+  },
+  {
+    "text": "If the carbohydrate content is high, it is said that digestion and absorption will not occur well.",
+    "start": 72.276,
+    "duration": 3.744
+  },
+  {
+    "text": "So if I intentionally try to eat less fat and not eat a lot of carbohydrates,",
+    "start": 76.02,
+    "duration": 5.267
+  },
+  {
+    "text": "The calories obtained from fat are inevitably higher than those obtained from carbohydrates.",
+    "start": 81.287,
+    "duration": 6.537
+  },
+  {
+    "text": "Let me give you an example to make it easier to understand.",
+    "start": 87.824,
+    "duration": 2.57
+  },
+  {
+    "text": "A serving of meat is about 200 grams.",
+    "start": 90.394,
+    "duration": 2.102
+  },
+  {
+    "text": "If you do not choose low-fat cuts like chicken breast or round steak, the fat content in 200g of meat is at least around 30g.",
+    "start": 92.496,
+    "duration": 8.066
+  },
+  {
+    "text": "Unrefined carbohydrates come in a variety of types.",
+    "start": 100.562,
+    "duration": 2.374
+  },
+  {
+    "text": "In the case of leafy vegetables, the average carbohydrate content is about 4g per 100g.",
+    "start": 102.936,
+    "duration": 4.142
+  },
+  {
+    "text": "The carbohydrate content of fruits is an average of 10g per 100g.",
+    "start": 107.078,
+    "duration": 2.63
+  },
+  {
+    "text": "The carbohydrate content of root vegetables is about 10 to 20 grams per 100 grams, so let's assume it is 20 grams.",
+    "start": 109.708,
+    "duration": 5.445
+  },
+  {
+    "text": "If you eat 200g each of leafy vegetables, fruits, and root vegetables, totaling 600g, you will obtain 70g of carbohydrates.",
+    "start": 115.153,
+    "duration": 7.012
+  },
+  {
+    "text": "Of the 70g, 15-20% is indigestible dietary fiber, so the actual carbohydrates excluding dietary fiber amount to about 60g.",
+    "start": 122.165,
+    "duration": 9.189
+  },
+  {
+    "text": "The calories in 60g of carbohydrates are 240 kcal.",
+    "start": 131.354,
+    "duration": 2.943
+  },
+  {
+    "text": "200g of meat with 30g of fat contains 270 kcal, which means the calorie content from fat is higher. This constitutes a low-carb, high-fat diet.",
+    "start": 134.297,
+    "duration": 8.916
+  },
+  {
+    "text": "Isn't 600g of vegetables and fruits too much?",
+    "start": 143.213,
+    "duration": 2.313
+  },
+  {
+    "text": "Yes, that's right. It's actually a very large amount to eat.",
+    "start": 145.526,
+    "duration": 2.128
+  },
+  {
+    "text": "The reason for setting the criteria this way is that...",
+    "start": 147.654,
+    "duration": 1.644
+  },
+  {
+    "text": "The standard portion for meat is set at 200g, which is easily consumable for one person.",
+    "start": 149.298,
+    "duration": 3.358
+  },
+  {
+    "text": "I set the standard at 600g, which is a quantity of vegetables and fruits that is quite difficult to consume.",
+    "start": 152.656,
+    "duration": 3.762
+  },
+  {
+    "text": "Even with this standard, it means that the calories obtained from fat are higher than those obtained from carbohydrates.",
+    "start": 156.418,
+    "duration": 5.933
+  },
+  {
+    "text": "The actual amount of vegetables consumed will be less than 600g.",
+    "start": 162.351,
+    "duration": 3.182
+  },
+  {
+    "text": "When choosing meat, you can select cuts that have a fat content of more than 15g per 100g.",
+    "start": 165.533,
+    "duration": 4.645
+  },
+  {
+    "text": "Even if you choose a cut with low fat content, you can still add oil separately.",
+    "start": 170.178,
+    "duration": 4.26
+  },
+  {
+    "text": "If you don't try to force yourself to eat less fat,",
+    "start": 174.438,
+    "duration": 2.46
+  },
+  {
+    "text": "When you structure your diet with unrefined foods, it naturally becomes a low-carb, high-fat diet.",
+    "start": 176.898,
+    "duration": 4.545
+  },
+  {
+    "text": "Even if you eat 600g of unrefined carbohydrates, it can still be a low-carb, high-fat diet.",
+    "start": 181.443,
+    "duration": 3.96
+  },
+  {
+    "text": "It doesn't mean you have to eat 600g a day. You don't have to force yourself to eat 600g.",
+    "start": 185.403,
+    "duration": 6.212
+  },
+  {
+    "text": "They only talk about vegetables and fruits, but they don't mention brown rice. Is it not good to eat brown rice?",
+    "start": 191.615,
+    "duration": 5.124
+  },
+  {
+    "text": "You can eat brown rice.",
+    "start": 196.739,
+    "duration": 1.983
+  },
+  {
+    "text": "Brown rice is in a form that still has the husk compared to white rice.",
+    "start": 198.722,
+    "duration": 2.612
+  },
+  {
+    "text": "In terms of nutritional content, there isn't much difference between white rice and carbohydrate content.",
+    "start": 201.334,
+    "duration": 3.768
+  },
+  {
+    "text": "So I left it out of the conversation to avoid confusion.",
+    "start": 205.102,
+    "duration": 3.282
+  },
+  {
+    "text": "As mentioned in the video of Part 3",
+    "start": 208.384,
+    "duration": 2.148
+  },
+  {
+    "text": "Brown rice has a skin, phytic acid, and dietary fiber that interfere with digestion and absorption.",
+    "start": 210.532,
+    "duration": 4.173
+  },
+  {
+    "text": "The amount of carbohydrates actually absorbed by the body is much less than that of white rice.",
+    "start": 214.705,
+    "duration": 4.15
+  },
+  {
+    "text": "There was a discussion that simply changing white rice to brown rice can have a dieting effect.",
+    "start": 218.855,
+    "duration": 4.012
+  },
+  {
+    "text": "So, although the amount of carbohydrates in the nutritional content is high, the actual amount of carbohydrates absorbed by my body is low.",
+    "start": 222.867,
+    "duration": 5.368
+  },
+  {
+    "text": "You can eat brown rice, and even if you eat brown rice, it will still be a low-carb, high-fat diet.",
+    "start": 228.235,
+    "duration": 5.606
+  },
+  {
+    "text": "Now, let's think about the question that appeared at the end of Part 2 once again.",
+    "start": 233.841,
+    "duration": 3.617
+  },
+  {
+    "text": "It seems that having a balanced diet would be the best option. Is it really necessary to follow a low-carb, high-fat diet?",
+    "start": 237.458,
+    "duration": 4.768
+  },
+  {
+    "text": "So, what is a balanced diet?",
+    "start": 242.226,
+    "duration": 6.233
+  },
+  {
+    "text": "It is said that a balanced diet consists of 60% carbohydrates, 20% protein, and 20% fat from the total calories.",
+    "start": 248.459,
+    "duration": 8.267
+  },
+  {
+    "text": "The Korea Centers for Disease Control and Prevention has indeed set the standard for a balanced diet as 60% carbohydrates, 20% protein, and 20% fat.",
+    "start": 256.726,
+    "duration": 8.019
+  },
+  {
+    "text": "So, how should I structure my diet to eat like that?",
+    "start": 264.745,
+    "duration": 4.167
+  },
+  {
+    "text": "The Korea Centers for Disease Control and Prevention recommends a daily intake of 2000 kcal.",
+    "start": 268.912,
+    "duration": 3.753
+  },
+  {
+    "text": "60% of 2000 kcal is 1200 kcal, and 1200 kcal of carbohydrates is 300g.",
+    "start": 272.665,
+    "duration": 5.668
+  },
+  {
+    "text": "20% of 2000 kcal is 400 kcal, and 400 kcal of fat is 45g.",
+    "start": 278.333,
+    "duration": 5.195
+  },
+  {
+    "text": "Then, carbohydrates are 300g and fats are 45g, which means carbohydrates are more than six times the amount of fats.",
+    "start": 283.528,
+    "duration": 6.181
+  },
+  {
+    "text": "Is this really a balanced diet?",
+    "start": 289.709,
+    "duration": 3.272
+  },
+  {
+    "text": "Moreover, 300g of carbohydrates is not an amount that can be consumed as unrefined carbohydrates.",
+    "start": 292.981,
+    "duration": 5.63
+  },
+  {
+    "text": "In the beginning of the video, it was mentioned that if you eat a balanced 600g of vegetables and fruits, you can obtain 60g of carbohydrates.",
+    "start": 298.611,
+    "duration": 5.29
+  },
+  {
+    "text": "To obtain 300g of carbohydrates, you need to eat five times that amount, which means you have to consume 3kg of vegetables and fruits.",
+    "start": 303.901,
+    "duration": 6.354
+  },
+  {
+    "text": "It is not a reasonable amount to eat.",
+    "start": 310.255,
+    "duration": 3.694
+  },
+  {
+    "text": "Isn't 2000 kcal too much?",
+    "start": 313.949,
+    "duration": 2.984
+  },
+  {
+    "text": "2000 kcal a day is not that much, but even if we think of it as reducing it to 1500 kcal...",
+    "start": 316.933,
+    "duration": 4.738
+  },
+  {
+    "text": "60% of 1500 kcal is 900 kcal, and 900 kcal of carbohydrates is 225g.",
+    "start": 321.671,
+    "duration": 5.8
+  },
+  {
+    "text": "The carbohydrates obtained from 600g of vegetables and fruits are 60g.",
+    "start": 327.471,
+    "duration": 3.128
+  },
+  {
+    "text": "To obtain 225g of carbohydrates from vegetables and fruits, you need to eat 2.2kg.",
+    "start": 330.599,
+    "duration": 4.451
+  },
+  {
+    "text": "Considering that we need to eat meat to obtain protein and fat, 2.2 kg seems excessive.",
+    "start": 335.05,
+    "duration": 5.289
+  },
+  {
+    "text": "So, it's impossible to consume 60% of your daily calories from carbohydrates through vegetables or fruits.",
+    "start": 340.339,
+    "duration": 5.424
+  },
+  {
+    "text": "To consume 60% of your total calories from carbohydrates, you must eat grains.",
+    "start": 345.763,
+    "duration": 4.268
+  },
+  {
+    "text": "Then a question arises here.",
+    "start": 350.031,
+    "duration": 2.144
+  },
+  {
+    "text": "Is it necessary for humans to eat grains? Not necessarily.",
+    "start": 352.175,
+    "duration": 5.784
+  },
+  {
+    "text": "In the entire history of humanity, the beginning of agriculture and the consumption of grains is a recent development.",
+    "start": 357.959,
+    "duration": 4.036
+  },
+  {
+    "text": "Before that, we lived on vegetables and fruits obtained through gathering, and meat obtained through hunting.",
+    "start": 361.995,
+    "duration": 5.112
+  },
+  {
+    "text": "So, humans have originally had a diet that derives more calories from fat than from carbohydrates.",
+    "start": 367.107,
+    "duration": 5.174
+  },
+  {
+    "text": "Because of this, the body has evolved to store carbohydrates in small amounts and fats in large amounts.",
+    "start": 372.281,
+    "duration": 4.812
+  },
+  {
+    "text": "It is hard to accept that one must eat grains in order to intentionally consume a lot of carbohydrates.",
+    "start": 377.093,
+    "duration": 6.334
+  },
+  {
+    "text": "If there is a diet that requires eating a lot of fat, do you have to eat butter?",
+    "start": 383.427,
+    "duration": 5.034
+  },
+  {
+    "text": "We do not consider this diet to be a balanced diet.",
+    "start": 388.461,
+    "duration": 3.204
+  },
+  {
+    "text": "I think it's a diet that includes a lot of fat.",
+    "start": 391.665,
+    "duration": 2.668
+  },
+  {
+    "text": "Similarly, if there is a diet that requires eating grains in order to consume a lot of carbohydrates,",
+    "start": 394.333,
+    "duration": 5.588
+  },
+  {
+    "text": "This is a diet that consists of a lot of carbohydrates; it is not a balanced diet.",
+    "start": 399.921,
+    "duration": 5.156
+  },
+  {
+    "text": "I will summarize.",
+    "start": 405.077,
+    "duration": 1.56
+  },
+  {
+    "text": "Do I have to follow a low-carb, high-fat diet? I don't think it's necessary.",
+    "start": 406.637,
+    "duration": 5.302
+  },
+  {
+    "text": "However, the best diet that I think is",
+    "start": 411.939,
+    "duration": 2.328
+  },
+  {
+    "text": "It's about eating unrefined foods while intentionally consuming a lot of certain nutrients or not restricting anything.",
+    "start": 414.267,
+    "duration": 5.25
+  },
+  {
+    "text": "If you eat like this, it will inevitably become a low-carb, high-fat diet.",
+    "start": 419.517,
+    "duration": 4.136
+  },
+  {
+    "text": "What kind of diet do you think is a good diet, Longa?",
+    "start": 423.653,
+    "duration": 3.526
+  },
+  {
+    "text": "In the following video, I will talk about what I consider to be a good diet.",
+    "start": 427.179,
+    "duration": 4.526
+  },
+  {
+    "text": "There should be two videos on the screen right now. Once the next video is completed, I will make sure it appears on the right.",
+    "start": 431.705,
+    "duration": 5.094
+  },
+  {
+    "text": "If the video on the right is not part 6 of the low-carb, high-fat diet series, please wait a few days as I am still in the process of making the video.",
+    "start": 436.799,
+    "duration": 6.032
+  },
+  {
+    "text": "If you found this video helpful, please subscribe and like it.",
+    "start": 442.831,
+    "duration": 2.542
+  },
+  {
+    "text": "I will return with the next video. Thank you.",
+    "start": 445.373,
+    "duration": 5.4
+  }
+]
