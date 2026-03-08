@@ -18,7 +18,7 @@ export function TrustSection() {
     <section className="py-24 px-6 bg-[#0a0a0f] relative overflow-hidden">
       <div
         className="absolute inset-0 opacity-20"
-        style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(6,182,212,0.06) 0%, transparent 60%)' }}
+        style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(201,169,110,0.06) 0%, transparent 60%)' }}
       />
 
       <div className="max-w-5xl mx-auto relative z-10">

@@ -18,7 +18,7 @@ export function WhyReturnSection() {
     <section className="py-24 px-6 bg-[#080810] relative overflow-hidden">
       <div
         className="absolute inset-0 opacity-30"
-        style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(139,92,246,0.06) 0%, transparent 60%)' }}
+        style={{ background: 'radial-gradient(ellipse at 30% 50%, rgba(168,139,122,0.06) 0%, transparent 60%)' }}
       />
 
       <div className="max-w-5xl mx-auto relative z-10">

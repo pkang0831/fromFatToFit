@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
-export type ColorTheme = 'cyan' | 'rose' | 'emerald' | 'sapphire';
+export type ColorTheme = 'gold' | 'steel' | 'sage' | 'mauve';
 
 export const COLOR_THEMES: Array<{
   id: ColorTheme;
@@ -11,10 +11,10 @@ export const COLOR_THEMES: Array<{
   primary: string;
   secondary: string;
 }> = [
-  { id: 'cyan', label: 'Cyan & Violet', primary: '#06b6d4', secondary: '#8b5cf6' },
-  { id: 'rose', label: 'Rose & Gold', primary: '#f43f5e', secondary: '#d97706' },
-  { id: 'emerald', label: 'Emerald & Lavender', primary: '#10b981', secondary: '#a78bfa' },
-  { id: 'sapphire', label: 'Sapphire & Amber', primary: '#3b82f6', secondary: '#f59e0b' },
+  { id: 'gold', label: 'Warm Gold', primary: '#c9a96e', secondary: '#a88b7a' },
+  { id: 'steel', label: 'Cool Steel', primary: '#7b9ab8', secondary: '#a8a0b8' },
+  { id: 'sage', label: 'Deep Sage', primary: '#6b9e7a', secondary: '#a89478' },
+  { id: 'mauve', label: 'Dusty Mauve', primary: '#b5838a', secondary: '#9a8578' },
 ];
 
 interface ThemeContextType {
@@ -32,7 +32,7 @@ const COLOR_THEME_KEY = 'color-theme';
 function applyColorTheme(ct: ColorTheme) {
   const root = document.documentElement;
   COLOR_THEMES.forEach((t) => root.classList.remove(`theme-${t.id}`));
-  if (ct !== 'cyan') {
+  if (ct !== 'gold') {
     root.classList.add(`theme-${ct}`);
   }
 }
@@ -51,7 +51,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('dark', initial === 'dark');
 
     const storedColor = localStorage.getItem(COLOR_THEME_KEY) as ColorTheme | null;
-    const initialColor = storedColor && COLOR_THEMES.some((t) => t.id === storedColor) ? storedColor : 'cyan';
+    const initialColor = storedColor && COLOR_THEMES.some((t) => t.id === storedColor) ? storedColor : 'gold';
     setColorThemeState(initialColor);
     applyColorTheme(initialColor);
   }, []);
@@ -85,7 +85,7 @@ export function useTheme() {
   if (ctx === undefined) {
     return {
       theme: 'light' as Theme,
-      colorTheme: 'cyan' as ColorTheme,
+      colorTheme: 'gold' as ColorTheme,
       toggleTheme: () => {},
       setColorTheme: (_ct: ColorTheme) => {},
     };
@@ -95,7 +95,7 @@ export function useTheme() {
 
 export function useThemeColors() {
   const { colorTheme } = useTheme();
-  const [colors, setColors] = useState({ primary: '#06b6d4', secondary: '#8b5cf6' });
+  const [colors, setColors] = useState({ primary: '#c9a96e', secondary: '#a88b7a' });
 
   useEffect(() => {
     const root = document.documentElement;

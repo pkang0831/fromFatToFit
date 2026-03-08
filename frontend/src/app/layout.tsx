@@ -55,7 +55,7 @@ const themeScript = `
     var dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (dark) document.documentElement.classList.add('dark');
     var ct = localStorage.getItem('color-theme');
-    if (ct && ct !== 'cyan') document.documentElement.classList.add('theme-' + ct);
+    if (ct && ct !== 'gold') document.documentElement.classList.add('theme-' + ct);
     var lang = localStorage.getItem('ftf-locale');
     if (lang) document.documentElement.lang = lang;
     if (lang === 'ar') document.documentElement.dir = 'rtl';

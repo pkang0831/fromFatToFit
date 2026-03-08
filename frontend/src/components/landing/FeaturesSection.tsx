@@ -7,19 +7,19 @@ import { useLanguage } from '@/contexts/LanguageContext';
 const features = [
   {
     icon: Sparkles,
-    color: 'from-cyan-400 to-violet-500',
+    color: 'from-amber-600/80 to-stone-500/80',
     titleKey: 'landing.feature1Title',
     descKey: 'landing.feature1Desc',
   },
   {
     icon: Scan,
-    color: 'from-violet-400 to-violet-600',
+    color: 'from-stone-400/80 to-stone-600/80',
     titleKey: 'landing.feature2Title',
     descKey: 'landing.feature2Desc',
   },
   {
     icon: TrendingUp,
-    color: 'from-emerald-400 to-emerald-600',
+    color: 'from-amber-700/80 to-amber-800/80',
     titleKey: 'landing.feature3Title',
     descKey: 'landing.feature3Desc',
   },
@@ -32,7 +32,7 @@ export function FeaturesSection() {
     <section className="py-24 px-6 bg-[#0a0a0f] relative overflow-hidden">
       <div
         className="absolute inset-0 opacity-30"
-        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(6,182,212,0.08) 0%, transparent 60%)' }}
+        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(201,169,110,0.08) 0%, transparent 60%)' }}
       />
 
       <div className="max-w-5xl mx-auto relative z-10">
