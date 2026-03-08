@@ -13,17 +13,25 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-FASHION_RECOMMEND_COST = 5
-FASHION_IMAGES_COST = 15
+FASHION_TOTAL_COST = 20
 
 
 class FashionRecommendRequest(BaseModel):
     season: str  # spring, summer, fall, winter
     gender: str = "female"
     height_cm: Optional[float] = None
+    weight_kg: Optional[float] = None
     body_notes: str = ""
     personal_color: str = ""
     best_colors: str = ""
+    avoid_colors: str = ""
+    face_shape: str = ""
+    forehead_ratio: str = ""
+    cheekbone_ratio: str = ""
+    jawline_ratio: str = ""
+    chin_type: str = ""
+    skin_tone: str = ""
+    skin_undertone: str = ""
     image_base64: Optional[str] = None
     generate_images: bool = False
 
@@ -41,18 +49,14 @@ async def recommend_fashion(
     body: FashionRecommendRequest,
     user=Depends(get_current_user),
 ):
-    """Get seasonal outfit recommendations + optionally generate outfit images."""
+    """Get seasonal outfit recommendations with AI-generated outfit images."""
     user_id = user["id"]
 
-    total_cost = FASHION_RECOMMEND_COST
-    if body.generate_images:
-        total_cost += FASHION_IMAGES_COST
-
     balance = await get_credit_balance(user_id)
-    if balance["total_credits"] < total_cost:
+    if balance["total_credits"] < FASHION_TOTAL_COST:
         raise HTTPException(
             status_code=402,
-            detail=f"Not enough credits. Need {total_cost}, have {balance['total_credits']}.",
+            detail=f"Not enough credits. Need {FASHION_TOTAL_COST}, have {balance['total_credits']}.",
         )
 
     try:
@@ -60,9 +64,18 @@ async def recommend_fashion(
             gender=body.gender,
             season=body.season,
             height_cm=body.height_cm,
+            weight_kg=body.weight_kg,
             body_notes=body.body_notes,
             personal_color=body.personal_color,
             best_colors=body.best_colors,
+            avoid_colors=body.avoid_colors,
+            face_shape=body.face_shape,
+            forehead_ratio=body.forehead_ratio,
+            cheekbone_ratio=body.cheekbone_ratio,
+            jawline_ratio=body.jawline_ratio,
+            chin_type=body.chin_type,
+            skin_tone=body.skin_tone,
+            skin_undertone=body.skin_undertone,
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -70,23 +83,22 @@ async def recommend_fashion(
         logger.error(f"Fashion recommendation failed: {e}")
         raise HTTPException(status_code=500, detail="Fashion recommendation failed")
 
-    await deduct_credits(user_id, FASHION_RECOMMEND_COST, "fashion_recommend")
-
     outfits = result.get("outfits", [])
 
-    if body.generate_images and outfits:
+    if outfits:
         try:
             outfits = await fashion_service.generate_outfit_images(
                 body.image_base64,
                 outfits,
                 body.gender,
             )
-            await deduct_credits(user_id, FASHION_IMAGES_COST, "fashion_images")
         except Exception as e:
             logger.error(f"Outfit image generation failed: {e}")
+
+    await deduct_credits(user_id, FASHION_TOTAL_COST, "fashion_styling")
 
     return FashionRecommendResponse(
         season=body.season,
         outfits=outfits,
-        credits_used=total_cost if body.generate_images else FASHION_RECOMMEND_COST,
+        credits_used=FASHION_TOTAL_COST,
     )

@@ -16,6 +16,7 @@ import {
 import { dashboardApi } from '@/lib/api/services';
 import type { CalorieBalanceTrendPoint } from '@/types/api';
 import { Card, CardContent } from '@/components/ui';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 interface Props {
   days: number;
@@ -25,6 +26,7 @@ export function CalorieBalanceChart({ days }: Props) {
   const [data, setData] = useState<CalorieBalanceTrendPoint[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { primary, secondary } = useThemeColors();
 
   useEffect(() => {
     loadData();
@@ -107,8 +109,8 @@ export function CalorieBalanceChart({ days }: Props) {
               <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
             </linearGradient>
             <linearGradient id="burnedGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2}/>
-              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+              <stop offset="5%" stopColor={primary} stopOpacity={0.2}/>
+              <stop offset="95%" stopColor={primary} stopOpacity={0}/>
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
@@ -154,7 +156,7 @@ export function CalorieBalanceChart({ days }: Props) {
           <Area 
             type="monotone" 
             dataKey="burned" 
-            stroke="#06b6d4" 
+            stroke={primary} 
             fill="url(#burnedGradient)"
             strokeWidth={2}
           />
@@ -162,10 +164,10 @@ export function CalorieBalanceChart({ days }: Props) {
           <Line 
             type="monotone" 
             dataKey="net" 
-            stroke="#8b5cf6" 
+            stroke={secondary} 
             strokeWidth={3}
-            dot={{ fill: '#8b5cf6', r: 3, strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: '#8b5cf6', stroke: '#8b5cf6', strokeWidth: 2 }}
+            dot={{ fill: secondary, r: 3, strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: secondary, stroke: secondary, strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -182,13 +184,13 @@ export function CalorieBalanceChart({ days }: Props) {
             </CardContent>
           </Card>
 
-          <Card className="border-cyan-500/20 dark:border-cyan-500/10 bg-cyan-500/[0.04]">
+          <Card className="border-primary/20 dark:border-primary/10 bg-primary/[0.04]">
             <CardContent className="p-4 text-center">
-              <div className="text-sm text-cyan-400 mb-1">Avg Burned</div>
-              <div className="text-3xl font-bold text-cyan-400 font-number">
+              <div className="text-sm text-primary mb-1">Avg Burned</div>
+              <div className="text-3xl font-bold text-primary font-number">
                 {Math.round(summary.avg_burned)}
               </div>
-              <div className="text-xs text-cyan-400/60 mt-1">kcal/day</div>
+              <div className="text-xs text-primary/60 mt-1">kcal/day</div>
             </CardContent>
           </Card>
 

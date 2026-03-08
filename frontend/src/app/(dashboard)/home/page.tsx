@@ -1,100 +1,47 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Utensils, 
-  Camera, 
-  Dumbbell, 
   Scan, 
   TrendingUp,
-  Flame,
+  Sparkles,
   Crown,
+  ArrowRight,
+  Target,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSubscription } from '@/lib/hooks/useSubscription';
-import { dashboardApi } from '@/lib/api/services';
-import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui';
-import dynamic from 'next/dynamic';
+import { bodyApi } from '@/lib/api/services';
+import { Card, CardContent, Badge, Button } from '@/components/ui';
 import { QuickStatsCard } from '@/components/features/QuickStatsCard';
 import { StreakBadge } from '@/components/features/StreakBadge';
-import type { QuickStatsResponse } from '@/types/api';
-import { SkeletonStats, SkeletonChart, SkeletonCard } from '@/components/ui/Skeleton';
-
-const CalorieBalanceChart = dynamic(
-  () => import('@/components/features/CalorieBalanceChart').then(m => m.CalorieBalanceChart),
-  { loading: () => <SkeletonChart />, ssr: false }
-);
-
-const featureCards = [
-  {
-    titleKey: 'dashboard.calorieTracker',
-    descKey: 'dashboard.calorieTrackerDesc',
-    icon: Utensils,
-    href: '/calories',
-    gradient: 'from-cyan-500 to-cyan-600',
-  },
-  {
-    titleKey: 'dashboard.aiFoodCamera',
-    descKey: 'dashboard.aiFoodCameraDesc',
-    icon: Camera,
-    href: '/food-camera',
-    gradient: 'from-violet-500 to-violet-600',
-  },
-  {
-    titleKey: 'dashboard.workoutTracker',
-    descKey: 'dashboard.workoutTrackerDesc',
-    icon: Dumbbell,
-    href: '/workouts',
-    gradient: 'from-emerald-500 to-emerald-600',
-  },
-  {
-    titleKey: 'dashboard.bodyScanner',
-    descKey: 'dashboard.bodyScannerDesc',
-    icon: Scan,
-    href: '/body-scan',
-    gradient: 'from-amber-500 to-orange-500',
-  },
-];
+import type { GapToGoalResponse } from '@/types/api';
+import { SkeletonStats, SkeletonCard } from '@/components/ui/Skeleton';
+import { WeeklyRescanPrompt } from '@/components/features/WeeklyRescanPrompt';
 
 export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
   const { t } = useLanguage();
   const { isPremium } = useSubscription();
-  const [stats, setStats] = useState<QuickStatsResponse | null>(null);
+  const [gapData, setGapData] = useState<GapToGoalResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [chartDays, setChartDays] = useState<7 | 30>(7);
 
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const response = await dashboardApi.getQuickStats();
-        setStats(response.data);
-      } catch (error: any) {
-        console.error('Failed to load stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStats();
+    bodyApi.getGapToGoal()
+      .then(res => setGapData(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
-
-  const calorieProgress = stats 
-    ? Math.min((stats.today_calories / stats.calorie_goal) * 100, 100)
-    : 0;
 
   if (loading) return (
     <div className="space-y-6">
-      <SkeletonStats count={4} />
-      <SkeletonChart />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <SkeletonCard />
-        <SkeletonCard />
-      </div>
+      <SkeletonStats count={3} />
+      <SkeletonCard />
+      <SkeletonCard />
     </div>
   );
 
@@ -108,119 +55,104 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
-      <div>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-text">
-              {getGreeting()}, <span className="gradient-text">{user?.full_name || 'there'}</span>
-            </h1>
-            <p className="text-text-secondary mt-1">
-              {t('dashboard.welcomeBack')}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <StreakBadge />
-            {isPremium && (
-              <Badge variant="premium" className="text-base px-4 py-2">
-                <Crown className="h-4 w-4 mr-2" />
-                {t('dashboard.premiumMember')}
-              </Badge>
-            )}
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-text">
+            {getGreeting()}, <span className="gradient-text">{user?.full_name || 'there'}</span>
+          </h1>
+          <p className="text-text-secondary mt-1">See your future body. Close the gap every week.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <StreakBadge />
+          {isPremium && (
+            <Badge variant="premium" className="text-base px-4 py-2">
+              <Crown className="h-4 w-4 mr-2" />
+              Pro
+            </Badge>
+          )}
         </div>
       </div>
 
-      {/* Quick Stats Grid */}
-      {stats ? (
-        <div data-tour="home-stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <QuickStatsCard
-            title={t('dashboard.todayCalories')}
-            value={Math.round(stats.today_calories)}
-            subtitle={t('dashboard.goalKcal', { value: stats.calorie_goal })}
-            icon={Utensils}
-            progress={{
-              current: stats.today_calories,
-              max: stats.calorie_goal,
-            }}
-          />
-          <QuickStatsCard
-            title={t('dashboard.todayProtein')}
-            value={`${Math.round(stats.today_protein)}g`}
-            subtitle={t('dashboard.keepItUp')}
-            icon={TrendingUp}
-          />
-          <QuickStatsCard
-            title={t('dashboard.todayBurned')}
-            value={Math.round(stats.total_burned)}
-            subtitle={t('dashboard.tdeeExercise', { tdee: Math.round(stats.tdee), exercise: Math.round(stats.workout_calories) })}
-            icon={Flame}
-          />
-        </div>
-      ) : null}
+      {/* Primary CTA: Body Scan / Weekly Check-in */}
+      <WeeklyRescanPrompt variant="full" />
 
-      {/* Calorie Balance Trend Chart */}
-      <Card data-tour="home-chart" variant="elevated" className="bg-surface">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-6 w-6" />
-              {t('dashboard.calorieBalanceTrend')}
-            </CardTitle>
-            <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                variant={chartDays === 7 ? 'primary' : 'outline'}
-                onClick={() => setChartDays(7)}
-              >
-                {t('dashboard.days7')}
-              </Button>
-              <Button 
-                size="sm" 
-                variant={chartDays === 30 ? 'primary' : 'outline'}
-                onClick={() => setChartDays(30)}
-              >
-                {t('dashboard.days30')}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <CalorieBalanceChart days={chartDays} />
-        </CardContent>
-      </Card>
-
-      {/* Feature Navigation Grid */}
-      <div>
-        <h2 className="text-2xl font-bold text-text mb-4">{t('dashboard.quickActions')}</h2>
-        <div data-tour="home-actions" className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {featureCards.map((feature) => {
-            const Icon = feature.icon;
-            return (
-              <Link key={feature.href} href={feature.href}>
-                <Card hover className="h-full">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <div className={`p-3 bg-gradient-to-br ${feature.gradient} rounded-xl`}>
-                        <Icon className="h-8 w-8 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-text mb-2">
-                          {t(feature.titleKey)}
-                        </h3>
-                        <p className="text-text-secondary">
-                          {t(feature.descKey)}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+      {/* Gap-to-Goal Stats from API */}
+      <div data-tour="home-stats" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <QuickStatsCard
+          title="Current Body Fat"
+          value={gapData?.current_bf != null ? `${gapData.current_bf.toFixed(1)}%` : '—'}
+          subtitle={gapData && gapData.scan_count > 0 ? `${gapData.scan_count} scan${gapData.scan_count !== 1 ? 's' : ''} completed` : 'Scan to measure'}
+          icon={Scan}
+        />
+        <QuickStatsCard
+          title="Gap to Goal"
+          value={gapData?.gap != null ? `${gapData.gap.toFixed(1)}% to go` : '—'}
+          subtitle={gapData?.target_bf != null ? `Target: ${gapData.target_bf}%` : 'Set your target in Body Scan'}
+          icon={Target}
+        />
+        <QuickStatsCard
+          title="Weekly Check-ins"
+          value={gapData?.scan_count ?? 0}
+          subtitle={gapData && gapData.scan_count > 0 ? 'Keep the streak going' : 'Start your first scan'}
+          icon={TrendingUp}
+        />
       </div>
 
-      {/* Premium Upgrade CTA (for free users) */}
+      {/* Core Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link href="/body-scan" className="group">
+          <Card hover className="h-full border-primary/20 bg-primary/[0.03]">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-xl">
+                  <Scan className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-text mb-1">Body Scan</h3>
+                  <p className="text-sm text-text-secondary">Measure & compare to your goal</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/body-scan#transformation" className="group">
+          <Card hover className="h-full">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl">
+                  <Sparkles className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-text mb-1">Goal Preview</h3>
+                  <p className="text-sm text-text-secondary">See your AI-generated target physique</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-text-light opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/progress" className="group">
+          <Card hover className="h-full">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl">
+                  <TrendingUp className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-text mb-1">Progress Timeline</h3>
+                  <p className="text-sm text-text-secondary">Side-by-side photos & trend lines</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-text-light opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Premium Upgrade CTA */}
       {!isPremium && (
         <Card variant="elevated" className="bg-gradient-to-r from-primary/[0.06] to-secondary/[0.06] border border-primary/20">
           <CardContent className="p-8">
@@ -228,28 +160,16 @@ export default function HomePage() {
               <div className="flex-1 text-center md:text-left">
                 <h3 className="text-2xl font-bold text-text mb-2 flex items-center justify-center md:justify-start">
                   <Crown className="h-6 w-6 text-premium mr-2" />
-                  {t('dashboard.upgradePremium')}
+                  Unlimited Weekly Scans. No Credit Cost.
                 </h3>
                 <p className="text-text-secondary mb-4">
-                  {t('dashboard.premiumCta')}
+                  Pro includes unlimited body scans, side-by-side comparisons, and full gap-to-goal analytics. Credits are only for premium AI previews.
                 </p>
-                <ul className="text-sm text-text-secondary space-y-2 mb-4">
-                  <li>&#10003; {t('dashboard.premiumBenefit1')}</li>
-                  <li>&#10003; {t('dashboard.premiumBenefit2')}</li>
-                  <li>&#10003; {t('dashboard.premiumBenefit3')}</li>
-                  <li>&#10003; {t('dashboard.premiumBenefit4')}</li>
-                </ul>
               </div>
-              <div>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={() => router.push('/upgrade')}
-                >
-                  <Crown className="h-5 w-5 mr-2" />
-                  {t('dashboard.getPremium')}
-                </Button>
-              </div>
+              <Button variant="primary" size="lg" onClick={() => router.push('/upgrade')}>
+                <Crown className="h-5 w-5 mr-2" />
+                Go Pro
+              </Button>
             </div>
           </CardContent>
         </Card>

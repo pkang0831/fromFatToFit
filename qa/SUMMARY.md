@@ -1,4 +1,4 @@
-# QA Summary Report — FromFatToFit
+# QA Summary Report — Devenira
 
 > Generated: 2026-02-26
 > Environment: local dev (localhost:3000 + localhost:8000)
@@ -22,7 +22,7 @@
 |------|----|----------|---------|--------|
 | 1 | F-001 | Major | `/fasting` and `/chat` not server-side protected by middleware | Security: unauthenticated users can briefly see dashboard layout before client redirect |
 | 2 | F-005 | Major | `ENVIRONMENT=production` in local .env disables OpenAPI docs | Dev productivity: cannot use /docs for API testing locally |
-| 3 | F-007 | Minor | HTML title "Health & Wellness App" instead of "FromFatToFit" | Branding: SEO and user-facing title is wrong |
+| 3 | F-007 | Minor | HTML title "Health & Wellness App" instead of "Devenira" | Branding: SEO and user-facing title is wrong |
 | 4 | F-002 | Minor | "or continue with" text not translated (i18n gap) | UX: inconsistent language on login/register pages |
 | 5 | F-003 | Minor | Footer copyright "All rights reserved." not translated | UX: minor i18n inconsistency in footer |
 

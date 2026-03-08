@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { weightApi } from '@/lib/api/services';
 import type { GoalProjectionResponse } from '@/types/api';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 interface GoalProjectionChartProps {
   daysHistory?: number;
@@ -32,6 +33,7 @@ const GoalProjectionChart: React.FC<GoalProjectionChartProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const initialLoadDone = useRef(false);
+  const { primary, secondary } = useThemeColors();
 
   useEffect(() => {
     fetchProjection();
@@ -379,7 +381,7 @@ const GoalProjectionChart: React.FC<GoalProjectionChartProps> = ({
             <Line
               type="monotone"
               dataKey="movingAvg"
-              stroke="#8b5cf6"
+              stroke={secondary}
               strokeWidth={2}
               dot={false}
               name="3-Day Avg"

@@ -16,25 +16,21 @@ import {
   MessageCircle,
   User,
   X,
-  Sparkles,
-  Shirt,
 } from 'lucide-react';
 
 const mainItems = [
   { href: '/home', label: 'Home', icon: Home },
-  { href: '/calories', label: 'Calories', icon: Utensils },
-  { href: '/workouts', label: 'Workouts', icon: Dumbbell },
-  { href: '/progress', label: 'Progress', icon: TrendingUp },
+  { href: '/body-scan', label: 'Body Scan', icon: Scan },
+  { href: '/chat', label: 'AI Coach', icon: MessageCircle },
+  { href: '/profile', label: 'Profile', icon: User },
 ];
 
 const moreItems = [
+  { href: '/progress', label: 'Progress', icon: TrendingUp },
+  { href: '/calories', label: 'Calories', icon: Utensils },
   { href: '/food-camera', label: 'Food Camera', icon: Camera },
+  { href: '/workouts', label: 'Workouts', icon: Dumbbell },
   { href: '/fasting', label: 'Fasting', icon: Timer },
-  { href: '/body-scan', label: 'Body Scan', icon: Scan },
-  { href: '/beauty-scan', label: 'Beauty', icon: Sparkles },
-  { href: '/fashion', label: 'Fashion', icon: Shirt },
-  { href: '/chat', label: 'AI Coach', icon: MessageCircle },
-  { href: '/profile', label: 'Profile', icon: User },
 ];
 
 export function MobileNav() {
@@ -52,7 +48,7 @@ export function MobileNav() {
       {showMore && (
         <div className="lg:hidden fixed bottom-[4.5rem] left-4 right-4 bg-surface border border-border rounded-2xl shadow-xl z-50 p-3">
           <div className="flex items-center justify-between mb-2 px-2">
-            <span className="text-sm font-semibold text-text">More</span>
+            <span className="text-sm font-semibold text-text">Extras</span>
             <button onClick={() => setShowMore(false)} className="p-1 rounded-lg hover:bg-surfaceAlt">
               <X className="h-4 w-4 text-text-light" />
             </button>
@@ -113,7 +109,7 @@ export function MobileNav() {
             )}
           >
             <MoreHorizontal className="h-6 w-6" />
-            <span className="text-xs mt-1">More</span>
+            <span className="text-xs mt-1">Extras</span>
           </button>
         </div>
       </nav>

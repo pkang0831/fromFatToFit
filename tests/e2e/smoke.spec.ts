@@ -66,7 +66,7 @@ test.describe('Smoke Tests @smoke', () => {
   test.describe('Login Page', () => {
     test('renders login form', async ({ page }) => {
       await page.goto('/login');
-      await expect(page.locator('h1')).toContainText(/FromFatToFit/);
+      await expect(page.locator('h1')).toContainText(/Devenira/);
       await expect(page.getByRole('textbox').first()).toBeVisible();
       await expect(page.getByRole('button', { name: /sign in|로그인/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /google/i })).toBeVisible();
@@ -89,7 +89,7 @@ test.describe('Smoke Tests @smoke', () => {
     test('renders all form fields and consent checkboxes', async ({ page }) => {
       await page.goto('/register');
 
-      await expect(page.locator('h1')).toContainText(/FromFatToFit/);
+      await expect(page.locator('h1')).toContainText(/Devenira/);
       const checkboxes = page.getByRole('checkbox');
       await expect(checkboxes).toHaveCount(4);
 

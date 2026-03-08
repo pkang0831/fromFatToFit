@@ -42,6 +42,12 @@ import type {
   GoalProjectionResponse,
 } from '@/types/api';
 
+// Guest API (no auth required)
+export const guestApi = {
+  bodyScan: (data: { image_base64: string; gender: string; age: number }) =>
+    api.post<{ body_fat_percentage: number; confidence: string; category: string; insight: string }>('/guest/body-scan', data),
+};
+
 // Auth API
 export const authApi = {
   register: (data: UserRegister) =>
@@ -144,6 +150,12 @@ export const bodyApi = {
 
   transformRegion: (data: RegionTransformRequest) =>
     api.post<RegionTransformResponse>('/body/transform-region', data),
+
+  getGapToGoal: () =>
+    api.get<import('@/types/api').GapToGoalResponse>('/body/gap-to-goal'),
+
+  saveGoal: (data: { goal_image_url: string; target_bf: number }) =>
+    api.patch('/body/save-goal', data),
 };
 
 // Payment API

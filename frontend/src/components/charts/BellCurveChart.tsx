@@ -1,6 +1,7 @@
 'use client';
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, ReferenceDot } from 'recharts';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 interface BellCurveChartProps {
   mean: number;
@@ -11,6 +12,7 @@ interface BellCurveChartProps {
 }
 
 export function BellCurveChart({ mean, std, userValue, percentile, unit = '%' }: BellCurveChartProps) {
+  const { primary, secondary } = useThemeColors();
   // Generate bell curve data points (inverted X-axis: lower BF% on right)
   const generateBellCurve = () => {
     const points = [];
@@ -114,12 +116,12 @@ export function BellCurveChart({ mean, std, userValue, percentile, unit = '%' }:
           {/* User position line */}
           <ReferenceLine 
             x={invertValue(userValue)} 
-            stroke="#8b5cf6" 
+            stroke={secondary} 
             strokeWidth={3}
             label={{ 
               value: `You: ${userValue.toFixed(1)}${unit}`, 
               position: 'top',
-              fill: '#8b5cf6',
+              fill: secondary,
               fontSize: 13,
               fontWeight: 700
             }}
@@ -130,7 +132,7 @@ export function BellCurveChart({ mean, std, userValue, percentile, unit = '%' }:
             x={invertValue(userValue)}
             y={userDataPoint.y}
             r={8}
-            fill="#8b5cf6"
+            fill={secondary}
             stroke="#fff"
             strokeWidth={3}
           />

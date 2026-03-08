@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 interface MuscleMapProps {
   activeMuscles: string[];
@@ -39,14 +39,24 @@ function normalizeMuscleName(name: string): string[] {
   return matched.length > 0 ? matched : [lower];
 }
 
-const PRIMARY_COLOR = '#06b6d4';
-const PRIMARY_GLOW = '#22d3ee';
 const INACTIVE_COLOR = '#334155';
 const INACTIVE_STROKE = '#475569';
 
-function FrontBody({ active }: { active: Set<string> }) {
-  const mc = (muscle: string) => active.has(muscle) ? PRIMARY_COLOR : INACTIVE_COLOR;
-  const sc = (muscle: string) => active.has(muscle) ? PRIMARY_GLOW : INACTIVE_STROKE;
+function useThemeMuscleColors() {
+  const [colors, setColors] = useState({ primary: '#06b6d4', glow: '#22d3ee' });
+  useEffect(() => {
+    const s = getComputedStyle(document.documentElement);
+    setColors({
+      primary: s.getPropertyValue('--color-primary-hex').trim() || '#06b6d4',
+      glow: s.getPropertyValue('--color-primary-light-hex').trim() || '#22d3ee',
+    });
+  }, []);
+  return colors;
+}
+
+function FrontBody({ active, primaryColor, glowColor }: { active: Set<string>; primaryColor: string; glowColor: string }) {
+  const mc = (muscle: string) => active.has(muscle) ? primaryColor : INACTIVE_COLOR;
+  const sc = (muscle: string) => active.has(muscle) ? glowColor : INACTIVE_STROKE;
   const isActive = (muscle: string) => active.has(muscle);
 
   return (
@@ -158,9 +168,9 @@ function FrontBody({ active }: { active: Set<string> }) {
   );
 }
 
-function BackBody({ active }: { active: Set<string> }) {
-  const mc = (muscle: string) => active.has(muscle) ? PRIMARY_COLOR : INACTIVE_COLOR;
-  const sc = (muscle: string) => active.has(muscle) ? PRIMARY_GLOW : INACTIVE_STROKE;
+function BackBody({ active, primaryColor, glowColor }: { active: Set<string>; primaryColor: string; glowColor: string }) {
+  const mc = (muscle: string) => active.has(muscle) ? primaryColor : INACTIVE_COLOR;
+  const sc = (muscle: string) => active.has(muscle) ? glowColor : INACTIVE_STROKE;
   const isActive = (muscle: string) => active.has(muscle);
 
   return (
@@ -259,6 +269,7 @@ function BackBody({ active }: { active: Set<string> }) {
 }
 
 export function MuscleMap({ activeMuscles, className = '' }: MuscleMapProps) {
+  const { primary: primaryColor, glow: glowColor } = useThemeMuscleColors();
   const activeSet = useMemo(() => {
     const set = new Set<string>();
     for (const muscle of activeMuscles) {
@@ -279,10 +290,10 @@ export function MuscleMap({ activeMuscles, className = '' }: MuscleMapProps) {
     <div className={`${className}`}>
       <div className="flex gap-2 justify-center">
         <div className="w-1/2 max-w-[160px]">
-          <FrontBody active={activeSet} />
+          <FrontBody active={activeSet} primaryColor={primaryColor} glowColor={glowColor} />
         </div>
         <div className="w-1/2 max-w-[160px]">
-          <BackBody active={activeSet} />
+          <BackBody active={activeSet} primaryColor={primaryColor} glowColor={glowColor} />
         </div>
       </div>
       {activeList.length > 0 && (

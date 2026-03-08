@@ -14,4 +14,4 @@ Disallow: /onboarding
 Disallow: /auth/
 Disallow: /api/
 
-Sitemap: https://fromfattofit.com/sitemap.xml
+Sitemap: https://devenira.com/sitemap.xml

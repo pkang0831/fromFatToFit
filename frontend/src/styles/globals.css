@@ -12,6 +12,17 @@
     --color-text-light: #94a3b8;
     --color-border: #e2e8f0;
     --color-border-light: #f1f5f9;
+
+    --color-primary: 6 182 212;
+    --color-primary-hex: #06b6d4;
+    --color-primary-light: 34 211 238;
+    --color-primary-light-hex: #22d3ee;
+    --color-primary-dark: 8 145 178;
+    --color-primary-dark-hex: #0891b2;
+    --color-secondary: 139 92 246;
+    --color-secondary-hex: #8b5cf6;
+    --color-secondary-light: 167 139 250;
+    --color-secondary-light-hex: #a78bfa;
   }
 
   .dark {
@@ -46,6 +57,104 @@
   }
 }
 
+/* ── Color Themes (outside @layer to prevent Tailwind tree-shaking) ── */
+
+/* Rose & Gold — warm luxury */
+.theme-rose {
+  --color-primary: 244 63 94;
+  --color-primary-hex: #f43f5e;
+  --color-primary-light: 251 113 133;
+  --color-primary-light-hex: #fb7185;
+  --color-primary-dark: 225 29 72;
+  --color-primary-dark-hex: #e11d48;
+  --color-secondary: 217 119 6;
+  --color-secondary-hex: #d97706;
+  --color-secondary-light: 245 158 11;
+  --color-secondary-light-hex: #f59e0b;
+  --color-background: #fef7f5;
+  --color-surface: #ffffff;
+  --color-surface-alt: #fef2f0;
+  --color-text: #1c0a0f;
+  --color-text-secondary: #6b3a4a;
+  --color-text-light: #b08090;
+  --color-border: #f5d5da;
+  --color-border-light: #fce8eb;
+}
+.theme-rose.dark {
+  --color-background: #0f0608;
+  --color-surface: #1a0c10;
+  --color-surface-alt: #2a1520;
+  --color-text: #f9e8ec;
+  --color-text-secondary: #c09aa8;
+  --color-text-light: #7a5060;
+  --color-border: rgba(244, 63, 94, 0.12);
+  --color-border-light: rgba(244, 63, 94, 0.06);
+}
+
+/* Emerald & Lavender — nature classic */
+.theme-emerald {
+  --color-primary: 16 185 129;
+  --color-primary-hex: #10b981;
+  --color-primary-light: 52 211 153;
+  --color-primary-light-hex: #34d399;
+  --color-primary-dark: 5 150 105;
+  --color-primary-dark-hex: #059669;
+  --color-secondary: 167 139 250;
+  --color-secondary-hex: #a78bfa;
+  --color-secondary-light: 196 181 253;
+  --color-secondary-light-hex: #c4b5fd;
+  --color-background: #f3faf7;
+  --color-surface: #ffffff;
+  --color-surface-alt: #ecf7f2;
+  --color-text: #062e20;
+  --color-text-secondary: #3a6b56;
+  --color-text-light: #80b0a0;
+  --color-border: #c6e8d8;
+  --color-border-light: #e0f5ec;
+}
+.theme-emerald.dark {
+  --color-background: #060f0b;
+  --color-surface: #0c1a14;
+  --color-surface-alt: #152a20;
+  --color-text: #e0f5ec;
+  --color-text-secondary: #90c8b0;
+  --color-text-light: #507860;
+  --color-border: rgba(16, 185, 129, 0.12);
+  --color-border-light: rgba(16, 185, 129, 0.06);
+}
+
+/* Sapphire & Amber — bold elegance */
+.theme-sapphire {
+  --color-primary: 59 130 246;
+  --color-primary-hex: #3b82f6;
+  --color-primary-light: 96 165 250;
+  --color-primary-light-hex: #60a5fa;
+  --color-primary-dark: 37 99 235;
+  --color-primary-dark-hex: #2563eb;
+  --color-secondary: 245 158 11;
+  --color-secondary-hex: #f59e0b;
+  --color-secondary-light: 251 191 36;
+  --color-secondary-light-hex: #fbbf24;
+  --color-background: #f5f8fe;
+  --color-surface: #ffffff;
+  --color-surface-alt: #eef3fc;
+  --color-text: #0a1628;
+  --color-text-secondary: #3a5580;
+  --color-text-light: #8098b8;
+  --color-border: #d0dff0;
+  --color-border-light: #e8f0fa;
+}
+.theme-sapphire.dark {
+  --color-background: #060a12;
+  --color-surface: #0c1220;
+  --color-surface-alt: #152035;
+  --color-text: #e0eaf5;
+  --color-text-secondary: #90a8c8;
+  --color-text-light: #506878;
+  --color-border: rgba(59, 130, 246, 0.12);
+  --color-border-light: rgba(59, 130, 246, 0.06);
+}
+
 @layer components {
   .glass {
     background: rgba(255, 255, 255, 0.05);
@@ -67,7 +176,7 @@
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+    background: linear-gradient(135deg, var(--color-primary-hex), var(--color-secondary-hex));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -83,7 +192,7 @@
     position: absolute;
     inset: -1px;
     border-radius: inherit;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.4), rgba(139, 92, 246, 0.4));
+    background: linear-gradient(135deg, rgb(var(--color-primary) / 0.4), rgb(var(--color-secondary) / 0.4));
     opacity: 0;
     transition: opacity 0.3s ease;
     z-index: -1;
@@ -100,12 +209,12 @@
 
   .card-hover:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(6, 182, 212, 0.1), 0 4px 12px rgba(139, 92, 246, 0.08);
+    box-shadow: 0 8px 30px rgb(var(--color-primary) / 0.1), 0 4px 12px rgb(var(--color-secondary) / 0.08);
   }
 
   .dark .card-hover:hover {
     border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 30px rgba(6, 182, 212, 0.08), 0 4px 12px rgba(139, 92, 246, 0.06);
+    box-shadow: 0 8px 30px rgb(var(--color-primary) / 0.08), 0 4px 12px rgb(var(--color-secondary) / 0.06);
   }
 
   .skeleton-shimmer {

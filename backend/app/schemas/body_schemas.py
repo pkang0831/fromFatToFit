@@ -10,7 +10,9 @@ class BodyScanRequest(BaseModel):
     age: Optional[int] = None
     ethnicity: Optional[str] = None
     height_cm: Optional[float] = None
-    target_bf_reduction: Optional[float] = Field(None, description="For transformation previews")
+    target_bf_reduction: Optional[float] = Field(None, description="Deprecated — use target_bf instead")
+    target_bf: Optional[float] = Field(None, description="Target body fat percentage")
+    enhancement_level: Optional[str] = Field(None, description="subtle, natural, or studio")
 
 
 class BodyFatEstimateResponse(BaseModel):
@@ -36,12 +38,16 @@ class PercentileResponse(BaseModel):
 
 
 class TransformationResponse(BaseModel):
-    original_image_url: str
+    original_image_url: str = ""
     transformed_image_url: str
-    target_bf_reduction: float
-    estimated_timeline_weeks: int
-    recommendations: List[str]
-    scan_id: str
+    current_bf: Optional[float] = None
+    target_bf: Optional[float] = None
+    direction: Optional[str] = None
+    muscle_gain_estimate: Optional[str] = None
+    estimated_timeline_weeks: int = 0
+    recommendations: List[str] = []
+    progress_frames: Optional[List[str]] = None
+    scan_id: Optional[str] = None
 
 
 class EnhancementResponse(BaseModel):
@@ -87,6 +93,39 @@ class BodyScanHistoryItem(BaseModel):
     image_url: Optional[str]
 
 
+class ScanHistoryPoint(BaseModel):
+    date: str
+    bf: float
+
+
+class GapToGoalResponse(BaseModel):
+    current_bf: Optional[float] = None
+    target_bf: Optional[float] = None
+    goal_image_url: Optional[str] = None
+    gap: Optional[float] = None
+    scan_count: int = 0
+    last_scan_date: Optional[str] = None
+    scan_history: List[ScanHistoryPoint] = []
+
+
+class SaveGoalRequest(BaseModel):
+    goal_image_url: str
+    target_bf: float
+
+
+class GuestScanRequest(BaseModel):
+    image_base64: str
+    gender: str = Field(..., description="male or female")
+    age: int = Field(..., ge=10, le=100)
+
+
+class GuestScanResponse(BaseModel):
+    body_fat_percentage: float
+    confidence: str
+    category: str
+    insight: str
+
+
 class UserProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     height_cm: Optional[float] = None
@@ -102,35 +141,3 @@ class UserProfileUpdate(BaseModel):
     consent_sensitive_data_at: Optional[str] = None
     consent_age_verified_at: Optional[str] = None
     consent_version: Optional[str] = None
-
-
-# ---------------------------------------------------------------------------
-# SAM Segmentation & Region Transform schemas
-# ---------------------------------------------------------------------------
-
-class SegmentRequest(BaseModel):
-    image_base64: str = Field(..., description="Base64-encoded body photo (no data: prefix)")
-    click_x: float = Field(..., ge=0.0, le=1.0, description="Normalized x coordinate of click (0=left, 1=right)")
-    click_y: float = Field(..., ge=0.0, le=1.0, description="Normalized y coordinate of click (0=top, 1=bottom)")
-
-
-class SegmentResponse(BaseModel):
-    mask_base64: str = Field(..., description="Base64 PNG mask (white=selected, black=background)")
-    body_part_guess: str = Field(..., description="AI guess of the body part: shoulders, chest, abs, arms, etc.")
-    mask_area_pct: float = Field(..., description="Percentage of image covered by mask")
-
-
-class RegionTransformRequest(BaseModel):
-    image_base64: str = Field(..., description="Base64-encoded body photo")
-    mask_base64: str = Field(..., description="Base64 PNG mask from segmentation (possibly user-refined)")
-    body_part: str = Field(..., description="Body part label: shoulders, chest, abs, arms, back, thighs, legs")
-    goal: str = Field(..., description="Transformation goal: bigger, leaner, more_defined, slimmer")
-    gender: str = Field(default="male", description="male or female")
-    intensity: str = Field(default="moderate", description="subtle, moderate, or dramatic")
-
-
-class RegionTransformResponse(BaseModel):
-    transformed_image_url: str = Field(..., description="Data URI of the composited result")
-    body_part: str
-    goal: str
-    direction: str = Field(..., description="fat_loss, muscle_gain, or definition")

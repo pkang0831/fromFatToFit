@@ -1,13 +1,13 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { UserPlus, ClipboardCheck, TrendingUp } from 'lucide-react';
+import { Camera, Sparkles, RefreshCw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const steps = [
-  { number: '01', icon: UserPlus },
-  { number: '02', icon: ClipboardCheck },
-  { number: '03', icon: TrendingUp },
+  { number: '01', icon: Camera },
+  { number: '02', icon: Sparkles },
+  { number: '03', icon: RefreshCw },
 ];
 
 const stepKeys = [
@@ -39,7 +39,6 @@ export function HowItWorksSection() {
         </motion.div>
 
         <div className="relative">
-          {/* Connector line */}
           <div className="hidden md:block absolute top-24 left-[16.67%] right-[16.67%] h-px bg-gradient-to-r from-primary/40 via-secondary/40 to-primary/40" />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">

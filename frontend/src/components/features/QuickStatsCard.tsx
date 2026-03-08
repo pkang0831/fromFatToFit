@@ -19,7 +19,9 @@ function CircularProgress({ current, max }: { current: number; max: number }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (pct / 100) * circumference;
 
-  let strokeColor = '#06b6d4';
+  const root = typeof document !== 'undefined' ? getComputedStyle(document.documentElement) : null;
+  const themeColor = root?.getPropertyValue('--color-primary-hex').trim() || '#06b6d4';
+  let strokeColor = themeColor;
   if (pct >= 90) strokeColor = '#22c55e';
   else if (pct >= 70) strokeColor = '#f59e0b';
 

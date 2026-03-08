@@ -64,7 +64,10 @@ function ProgressRing({ progress, size = 200 }: { progress: number; size?: numbe
   const clamped = Math.min(Math.max(progress, 0), 1);
   const offset = circumference * (1 - clamped);
 
-  const color = clamped >= 1 ? '#22c55e' : clamped >= 0.75 ? '#f59e0b' : '#06b6d4';
+  const themeColor = typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--color-primary-hex').trim() || '#06b6d4'
+    : '#06b6d4';
+  const color = clamped >= 1 ? '#22c55e' : clamped >= 0.75 ? '#f59e0b' : themeColor;
 
   return (
     <svg width={size} height={size} className="transform -rotate-90">

@@ -1,4 +1,4 @@
-# QA Findings — FromFatToFit
+# QA Findings — Devenira
 
 > Findings accumulated during browser-based QA testing on 2026-02-26.
 > Environment: local dev (localhost:3000 frontend, localhost:8000 backend)
@@ -20,7 +20,7 @@
 | F-004 | Minor | P3 | All pages | Hydration warning: `data-cursor-ref` extra attribute on FooterSection h3 | 3/3 |
 | F-005 | Major | P1 | Backend | `/docs` (OpenAPI) returns 404 — ENVIRONMENT=production in .env | 3/3 |
 | F-006 | Minor | P2 | `/chat` | Unauthenticated access shows "Loading..." for ~2-3 seconds before client redirect | 3/3 |
-| F-007 | Minor | P3 | `<title>` | Page title is "Health & Wellness App" not "FromFatToFit" — branding mismatch | 3/3 |
+| F-007 | Minor | P3 | `<title>` | Page title is "Health & Wellness App" not "Devenira" — branding mismatch | 3/3 |
 
 ---
 
@@ -70,7 +70,7 @@
   2. Scroll to footer
   3. Check copyright line
 - **Expected**: Entire copyright line in Korean
-- **Actual**: Shows "© 2026 FromFatToFit . All rights reserved." (English)
+- **Actual**: Shows "© 2026 Devenira . All rights reserved." (English)
 - **Root Cause**: Footer component may not apply `t('legal.allRightsReserved')` to this specific text
 - **Repro Rate**: 3/3
 
@@ -118,7 +118,7 @@
 - **Root Cause**: Same as F-001 — middleware gap
 - **Repro Rate**: 3/3
 
-### F-007: HTML title "Health & Wellness App" instead of "FromFatToFit"
+### F-007: HTML title "Health & Wellness App" instead of "Devenira"
 
 - **Severity**: Minor
 - **Priority**: P3
@@ -126,10 +126,10 @@
 - **Repro Steps**:
   1. Navigate to any page
   2. Check browser tab title
-- **Expected**: "FromFatToFit" or page-specific title
+- **Expected**: "Devenira" or page-specific title
 - **Actual**: "Health & Wellness App"
 - **Root Cause**: `frontend/src/app/layout.tsx` metadata sets `title: 'Health & Wellness App'`
-- **Suggested Fix**: Change to `title: 'FromFatToFit'` in root layout metadata
+- **Suggested Fix**: Change to `title: 'Devenira'` in root layout metadata
 - **Repro Rate**: 3/3
 
 ---

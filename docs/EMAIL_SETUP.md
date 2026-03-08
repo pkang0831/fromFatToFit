@@ -1,4 +1,4 @@
-# Email System Setup — FromFatToFit
+# Email System Setup — Devenira
 
 ## Supabase Email Templates
 
@@ -6,12 +6,12 @@ Go to **Supabase Dashboard > Authentication > Email Templates** and customize ea
 
 ### 1. Confirm Signup
 
-**Subject**: Welcome to FromFatToFit!
+**Subject**: Welcome to Devenira!
 
 ```html
 <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
   <div style="text-align: center; margin-bottom: 32px;">
-    <h1 style="color: #D97706; font-size: 28px; margin: 0;">FromFatToFit</h1>
+    <h1 style="color: #D97706; font-size: 28px; margin: 0;">Devenira</h1>
     <p style="color: #6B7280; font-size: 14px;">AI-Powered Fitness Tracking</p>
   </div>
 
@@ -34,12 +34,12 @@ Go to **Supabase Dashboard > Authentication > Email Templates** and customize ea
 
 ### 2. Reset Password
 
-**Subject**: Reset your FromFatToFit password
+**Subject**: Reset your Devenira password
 
 ```html
 <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
   <div style="text-align: center; margin-bottom: 32px;">
-    <h1 style="color: #D97706; font-size: 28px; margin: 0;">FromFatToFit</h1>
+    <h1 style="color: #D97706; font-size: 28px; margin: 0;">Devenira</h1>
   </div>
 
   <div style="background: #F9FAFB; border-radius: 12px; padding: 32px; margin-bottom: 24px;">
@@ -61,12 +61,12 @@ Go to **Supabase Dashboard > Authentication > Email Templates** and customize ea
 
 ### 3. Magic Link
 
-**Subject**: Sign in to FromFatToFit
+**Subject**: Sign in to Devenira
 
 ```html
 <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
   <div style="text-align: center; margin-bottom: 32px;">
-    <h1 style="color: #D97706; font-size: 28px; margin: 0;">FromFatToFit</h1>
+    <h1 style="color: #D97706; font-size: 28px; margin: 0;">Devenira</h1>
   </div>
 
   <div style="background: #F9FAFB; border-radius: 12px; padding: 32px; margin-bottom: 24px;">
@@ -89,8 +89,8 @@ Go to **Supabase Dashboard > Authentication > Email Templates** and customize ea
 ## Supabase Settings
 
 ### Authentication > URL Configuration
-- **Site URL**: `https://fromfattofit.com`
-- **Redirect URLs**: `https://fromfattofit.com/auth/callback`
+- **Site URL**: `https://devenira.com`
+- **Redirect URLs**: `https://devenira.com/auth/callback`
 
 ### Authentication > Email Auth
 - Enable "Confirm email" toggle
@@ -111,7 +111,7 @@ Go to **Project Settings > Auth > SMTP Settings** and configure:
 
 Add to Vercel if using custom SMTP:
 ```
-NEXT_PUBLIC_APP_URL=https://fromfattofit.com
+NEXT_PUBLIC_APP_URL=https://devenira.com
 ```
 
 This is used in Supabase's redirect URLs for email confirmation links.

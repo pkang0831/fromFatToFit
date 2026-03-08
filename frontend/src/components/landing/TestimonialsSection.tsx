@@ -20,7 +20,7 @@ export function TestimonialsSection() {
         style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.06) 0%, transparent 60%)' }}
       />
 
-      <div className="max-w-6xl mx-auto relative z-10">
+      <div className="max-w-5xl mx-auto relative z-10">
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 20 }}
@@ -56,7 +56,7 @@ export function TestimonialsSection() {
                 </div>
                 <div>
                   <div className="font-semibold text-white text-sm">{item.name}</div>
-                  <div className="text-xs text-white/40">{t(item.roleKey)}</div>
+                  <div className="text-xs text-primary/70 font-medium">{t(item.roleKey)}</div>
                 </div>
               </div>
             </motion.div>

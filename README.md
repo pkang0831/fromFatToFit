@@ -1,4 +1,4 @@
-# FromFatToFit - Health & Wellness App
+# Devenira - Health & Wellness App
 
 AI-powered health and wellness application with calorie tracking, body analysis, workout logging, and transformation previews.
 

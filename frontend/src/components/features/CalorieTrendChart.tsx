@@ -2,6 +2,7 @@
 
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatDateShort } from '@/lib/utils/date';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 interface CalorieTrendChartProps {
   data: Array<{ date: string; calories: number; goal: number }>;
@@ -9,14 +10,15 @@ interface CalorieTrendChartProps {
 }
 
 export default function CalorieTrendChart({ data, averageCalories }: CalorieTrendChartProps) {
+  const { primary, secondary } = useThemeColors();
   return (
     <>
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={data}>
           <defs>
             <linearGradient id="calorieGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+              <stop offset="5%" stopColor={primary} stopOpacity={0.2} />
+              <stop offset="95%" stopColor={primary} stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
@@ -41,8 +43,8 @@ export default function CalorieTrendChart({ data, averageCalories }: CalorieTren
             }}
           />
           <Legend />
-          <Area type="monotone" dataKey="calories" stroke="#06b6d4" fill="url(#calorieGradient)" strokeWidth={2} name="Calories" />
-          <Line type="monotone" dataKey="goal" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="5 5" name="Goal" dot={false} />
+          <Area type="monotone" dataKey="calories" stroke={primary} fill="url(#calorieGradient)" strokeWidth={2} name="Calories" />
+          <Line type="monotone" dataKey="goal" stroke={secondary} strokeWidth={2} strokeDasharray="5 5" name="Goal" dot={false} />
         </AreaChart>
       </ResponsiveContainer>
       <p className="text-center text-sm text-text-secondary mt-4">

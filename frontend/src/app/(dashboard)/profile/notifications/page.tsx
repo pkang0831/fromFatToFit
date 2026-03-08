@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Bell, Mail, Smartphone, Save } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui';
 import { notificationApi } from '@/lib/api/services';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Preferences {
   email_weekly_summary: boolean;
@@ -12,6 +13,7 @@ interface Preferences {
   email_credit_low: boolean;
   push_meal_reminder: boolean;
   push_workout_reminder: boolean;
+  push_weekly_body_scan: boolean;
   push_daily_summary: boolean;
   meal_reminder_time: string;
   workout_reminder_days: string[];
@@ -20,6 +22,7 @@ interface Preferences {
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 export default function NotificationSettingsPage() {
+  const { t } = useLanguage();
   const [prefs, setPrefs] = useState<Preferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,7 +35,7 @@ export default function NotificationSettingsPage() {
 
     notificationApi.getPreferences()
       .then(res => setPrefs(res.data))
-      .catch(() => { toast.error('Failed to load notification preferences'); })
+      .catch(() => { toast.error(t('notifications.loadFailed')); })
       .finally(() => setLoading(false));
 
     if ('serviceWorker' in navigator) {
@@ -70,7 +73,7 @@ export default function NotificationSettingsPage() {
       }
     } catch (err) {
       console.error('Push toggle error:', err);
-      toast.error('Failed to toggle push notifications');
+      toast.error(t('notifications.pushToggleFailed'));
     }
   };
 
@@ -82,10 +85,10 @@ export default function NotificationSettingsPage() {
       setPrefs(res.data);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-      toast.success('Notification preferences saved');
+      toast.success(t('notifications.saveSuccess'));
     } catch (err) {
       console.error('Save error:', err);
-      toast.error('Failed to save notification preferences');
+      toast.error(t('notifications.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -117,8 +120,8 @@ export default function NotificationSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Notification Settings</h1>
-        <p className="text-gray-600 dark:text-gray-400">Choose how and when you want to be notified.</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('notifications.title')}</h1>
+        <p className="text-gray-600 dark:text-gray-400">{t('notifications.subtitle')}</p>
       </div>
 
       {/* Push Notifications */}
@@ -126,15 +129,15 @@ export default function NotificationSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Smartphone className="h-5 w-5" />
-            Push Notifications
+            {t('notifications.pushNotifications')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-gray-900 dark:text-white">Enable Push Notifications</p>
+              <p className="font-medium text-gray-900 dark:text-white">{t('notifications.enablePush')}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {pushSupported ? 'Receive notifications in your browser.' : 'Push notifications are not supported in this browser.'}
+                {pushSupported ? t('notifications.pushSupported') : t('notifications.pushNotSupported')}
               </p>
             </div>
             <button
@@ -146,13 +149,14 @@ export default function NotificationSettingsPage() {
             </button>
           </div>
 
-          <ToggleRow label="Meal Logging Reminder" desc="Get reminded to log your meals" checked={prefs.push_meal_reminder} onChange={() => toggle('push_meal_reminder')} />
-          <ToggleRow label="Workout Reminder" desc="Get reminded on scheduled workout days" checked={prefs.push_workout_reminder} onChange={() => toggle('push_workout_reminder')} />
-          <ToggleRow label="Daily Summary" desc="End-of-day calorie and activity summary" checked={prefs.push_daily_summary} onChange={() => toggle('push_daily_summary')} />
+          <ToggleRow label="Weekly Body Scan Reminder" desc="Get reminded when your weekly scan is ready" checked={prefs.push_weekly_body_scan} onChange={() => toggle('push_weekly_body_scan')} />
+          <ToggleRow label={t('notifications.mealReminder')} desc={t('notifications.mealReminderDesc')} checked={prefs.push_meal_reminder} onChange={() => toggle('push_meal_reminder')} />
+          <ToggleRow label={t('notifications.workoutReminder')} desc={t('notifications.workoutReminderDesc')} checked={prefs.push_workout_reminder} onChange={() => toggle('push_workout_reminder')} />
+          <ToggleRow label={t('notifications.dailySummary')} desc={t('notifications.dailySummaryDesc')} checked={prefs.push_daily_summary} onChange={() => toggle('push_daily_summary')} />
 
           {prefs.push_meal_reminder && (
             <div className="pl-4 border-l-2 border-primary/20">
-              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">Reminder Time</label>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">{t('notifications.reminderTime')}</label>
               <input
                 type="time"
                 value={prefs.meal_reminder_time}
@@ -164,7 +168,7 @@ export default function NotificationSettingsPage() {
 
           {prefs.push_workout_reminder && (
             <div className="pl-4 border-l-2 border-primary/20">
-              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Workout Days</label>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">{t('notifications.workoutDays')}</label>
               <div className="flex flex-wrap gap-2">
                 {DAYS.map(day => (
                   <button
@@ -190,13 +194,13 @@ export default function NotificationSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            Email Notifications
+            {t('notifications.emailNotifications')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ToggleRow label="Weekly Progress Summary" desc="Receive a weekly email summarizing your progress" checked={prefs.email_weekly_summary} onChange={() => toggle('email_weekly_summary')} />
-          <ToggleRow label="Inactivity Reminder" desc="Get an email if you haven't logged anything in 3 days" checked={prefs.email_inactivity_reminder} onChange={() => toggle('email_inactivity_reminder')} />
-          <ToggleRow label="Low Credit Warning" desc="Get notified when your credits are running low" checked={prefs.email_credit_low} onChange={() => toggle('email_credit_low')} />
+          <ToggleRow label={t('notifications.weeklySummary')} desc={t('notifications.weeklySummaryDesc')} checked={prefs.email_weekly_summary} onChange={() => toggle('email_weekly_summary')} />
+          <ToggleRow label={t('notifications.inactivityReminder')} desc={t('notifications.inactivityReminderDesc')} checked={prefs.email_inactivity_reminder} onChange={() => toggle('email_inactivity_reminder')} />
+          <ToggleRow label={t('notifications.lowCredit')} desc={t('notifications.lowCreditDesc')} checked={prefs.email_credit_low} onChange={() => toggle('email_credit_low')} />
         </CardContent>
       </Card>
 
@@ -204,7 +208,7 @@ export default function NotificationSettingsPage() {
       <div className="flex justify-end">
         <Button variant="primary" size="lg" onClick={handleSave} isLoading={saving}>
           <Save className="h-5 w-5 mr-2" />
-          {saved ? 'Saved!' : 'Save Preferences'}
+          {saved ? t('notifications.saved') : t('notifications.savePreferences')}
         </Button>
       </div>
     </div>

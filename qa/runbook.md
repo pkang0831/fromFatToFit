@@ -1,4 +1,4 @@
-# QA Runbook — FromFatToFit
+# QA Runbook — Devenira
 
 ## 1. Local Environment Setup
 
@@ -86,7 +86,7 @@ npx playwright show-report
 curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "qa-test@fromfattofit.test",
+    "email": "qa-test@devenira.test",
     "password": "TestPass123!",
     "full_name": "QA Test User",
     "gender": "male",

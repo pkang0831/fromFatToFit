@@ -2,7 +2,7 @@
 
 import { useState, useRef, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, Upload, X, Crown } from 'lucide-react';
+import { Camera, Upload, X, Crown, Zap, Search, PieChart, ThumbsUp } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { foodApi, foodDecisionApi } from '@/lib/api/services';
@@ -170,15 +170,32 @@ export default function FoodCameraPage() {
                 className="hidden"
                 capture="environment"
               />
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border rounded-lg p-12 cursor-pointer hover:border-primary transition-colors"
-              >
-                <Camera className="h-16 w-16 text-text-light mx-auto mb-4" />
-                <p className="text-lg font-medium text-text mb-2">{t('food.takeOrUpload')}</p>
-                <p className="text-sm text-text-secondary">
-                  {t('food.clickToSelect')}
-                </p>
+              <div className="space-y-5">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-primary/30 rounded-2xl p-10 cursor-pointer hover:border-primary/60 hover:bg-primary/[0.02] transition-all group"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <Camera className="h-8 w-8 text-primary" />
+                  </div>
+                  <p className="text-lg font-semibold text-text mb-1">{t('food.takeOrUpload')}</p>
+                  <p className="text-sm text-text-secondary">{t('food.clickToSelect')}</p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { icon: Search, label: 'Identify Food', desc: 'AI detects what you ate' },
+                    { icon: PieChart, label: 'Full Macros', desc: 'Calories, protein, carbs, fat' },
+                    { icon: ThumbsUp, label: 'Eat or Skip?', desc: 'AI diet verdict' },
+                    { icon: Zap, label: 'Auto-Log', desc: 'Saves to your diary' },
+                  ].map(({ icon: Icon, label, desc }) => (
+                    <div key={label} className="p-3 rounded-xl border border-border bg-white/[0.02] text-center">
+                      <Icon className="w-5 h-5 text-primary mx-auto mb-1.5" />
+                      <p className="text-xs font-semibold text-text">{label}</p>
+                      <p className="text-[10px] text-text-light mt-0.5">{desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (

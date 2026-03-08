@@ -8,6 +8,7 @@ from ..schemas.body_schemas import (
     TransformationResponse, EnhancementResponse, BodyScanHistoryItem,
     SegmentRequest, SegmentResponse,
     RegionTransformRequest, RegionTransformResponse,
+    GapToGoalResponse, ScanHistoryPoint, SaveGoalRequest,
 )
 from ..database import get_supabase
 from ..middleware.auth_middleware import get_current_user
@@ -349,6 +350,15 @@ async def generate_transformation_preview(
         db_result = supabase.table("body_scans").insert(scan_data).execute()
         scan_id = db_result.data[0]["id"] if db_result.data else None
 
+        # Auto-save goal to user_profiles for gap-to-goal loop
+        try:
+            supabase.table("user_profiles").update({
+                "goal_image_url": result_data["transformed_image_url"],
+                "target_body_fat_percentage": target_bf,
+            }).eq("id", current_user["id"]).execute()
+        except Exception as goal_err:
+            logger.warning(f"Failed to save goal to profile: {goal_err}")
+
         return TransformationResponse(
             original_image_url="",
             transformed_image_url=result_data["transformed_image_url"],
@@ -471,6 +481,107 @@ async def get_scan_history(
     except Exception as e:
         logger.error(f"Error getting scan history: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Gap-to-Goal Retention Loop
+# ---------------------------------------------------------------------------
+
+@router.get("/gap-to-goal", response_model=GapToGoalResponse)
+async def get_gap_to_goal(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get gap-to-goal data: current BF, target, goal image, scan history trend"""
+    try:
+        supabase = get_supabase()
+
+        # Get user profile for target BF and goal image
+        try:
+            profile_result = supabase.table("user_profiles").select(
+                "target_body_fat_percentage, goal_image_url"
+            ).eq("id", current_user["id"]).execute()
+            profile = profile_result.data[0] if profile_result.data else {}
+        except Exception:
+            # goal_image_url column may not exist yet
+            try:
+                profile_result = supabase.table("user_profiles").select(
+                    "target_body_fat_percentage"
+                ).eq("id", current_user["id"]).execute()
+                profile = profile_result.data[0] if profile_result.data else {}
+            except Exception:
+                profile = {}
+
+        target_bf = profile.get("target_body_fat_percentage")
+        goal_image_url = profile.get("goal_image_url")
+        if target_bf is not None:
+            target_bf = float(target_bf)
+
+        # Get all bodyfat/percentile scans ordered by date
+        scans_result = supabase.table("body_scans").select(
+            "created_at, result_data, scan_type"
+        ).eq("user_id", current_user["id"]).in_(
+            "scan_type", ["bodyfat", "percentile"]
+        ).order("created_at", desc=False).execute()
+
+        scan_history: list[ScanHistoryPoint] = []
+        current_bf = None
+        last_scan_date = None
+
+        for scan in (scans_result.data or []):
+            rd = scan.get("result_data", {})
+            bf = rd.get("body_fat_percentage")
+            if bf is None and "percentile" in rd:
+                bf = rd.get("body_fat_percentage")
+            if bf is not None:
+                bf = float(bf)
+                scan_date = scan["created_at"][:10]
+                scan_history.append(ScanHistoryPoint(date=scan_date, bf=bf))
+                current_bf = bf
+                last_scan_date = scan_date
+
+        gap = None
+        if current_bf is not None and target_bf is not None:
+            gap = round(current_bf - target_bf, 1)
+
+        return GapToGoalResponse(
+            current_bf=current_bf,
+            target_bf=target_bf,
+            goal_image_url=goal_image_url,
+            gap=gap,
+            scan_count=len(scan_history),
+            last_scan_date=last_scan_date,
+            scan_history=scan_history,
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting gap-to-goal: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get gap-to-goal data"
+        )
+
+
+@router.patch("/save-goal")
+async def save_goal(
+    goal_request: SaveGoalRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Save transformation goal image and target body fat to user profile"""
+    try:
+        supabase = get_supabase()
+        supabase.table("user_profiles").update({
+            "goal_image_url": goal_request.goal_image_url,
+            "target_body_fat_percentage": goal_request.target_bf,
+        }).eq("id", current_user["id"]).execute()
+
+        return {"status": "ok"}
+
+    except Exception as e:
+        logger.error(f"Error saving goal: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save goal"
+        )
 
 
 # ---------------------------------------------------------------------------

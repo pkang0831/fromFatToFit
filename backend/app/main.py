@@ -11,7 +11,7 @@ import logging
 
 from .config import settings
 from .rate_limit import limiter
-from .routers import auth, food, workout, body, payments, dashboard, food_database, food_decision, weight, notifications, chat, beauty, fashion
+from .routers import auth, food, workout, body, payments, dashboard, food_database, food_decision, weight, notifications, chat, beauty, fashion, guest
 
 logging.basicConfig(
     level=logging.INFO if not settings.is_production else logging.WARNING,
@@ -127,6 +127,7 @@ app.include_router(notifications.router, prefix="/api/notifications", tags=["Not
 app.include_router(chat.router, prefix="/api/chat", tags=["AI Coach Chat"])
 app.include_router(beauty.router, prefix="/api/beauty", tags=["Beauty Analysis"])
 app.include_router(fashion.router, prefix="/api/fashion", tags=["Fashion Styling"])
+app.include_router(guest.router, prefix="/api/guest", tags=["Guest (No Auth)"])
 
 
 @app.get("/")

@@ -7,9 +7,9 @@ export default function TermsOfServicePage() {
       <section className="mb-8">
         <h2>1. Acceptance of Terms</h2>
         <p>
-          By accessing or using the FromFatToFit application and services (collectively, the &ldquo;Service&rdquo;),
+          By accessing or using the Devenira application and services (collectively, the &ldquo;Service&rdquo;),
           you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree to all of these
-          Terms, do not use the Service. These Terms constitute a legally binding agreement between you and FromFatToFit
+          Terms, do not use the Service. These Terms constitute a legally binding agreement between you and Devenira
           (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;).
         </p>
       </section>
@@ -26,7 +26,7 @@ export default function TermsOfServicePage() {
       <section className="mb-8">
         <h2>3. Description of Service</h2>
         <p>
-          FromFatToFit is an AI-powered fitness and nutrition tracking platform that provides the following features:
+          Devenira is an AI-powered fitness and nutrition tracking platform that provides the following features:
         </p>
         <ul>
           <li><strong>Food &amp; Nutrition Tracking:</strong> AI-based food photo analysis, calorie and macronutrient estimation, manual food logging, and dietary recommendations.</li>
@@ -166,7 +166,7 @@ export default function TermsOfServicePage() {
         <h2>9. Intellectual Property</h2>
         <p>
           The Service, including its design, features, code, AI models, and content (excluding User Content),
-          is owned by FromFatToFit and protected by intellectual property laws. You are granted a limited,
+          is owned by Devenira and protected by intellectual property laws. You are granted a limited,
           non-exclusive, non-transferable license to use the Service for personal, non-commercial purposes
           in accordance with these Terms.
         </p>
@@ -189,7 +189,7 @@ export default function TermsOfServicePage() {
       <section className="mb-8">
         <h2>11. Indemnification</h2>
         <p>
-          You agree to indemnify, defend, and hold harmless FromFatToFit, its officers, directors, employees,
+          You agree to indemnify, defend, and hold harmless Devenira, its officers, directors, employees,
           and agents from and against any claims, liabilities, damages, losses, and expenses (including
           reasonable attorneys&apos; fees) arising out of or related to your use of the Service, your violation
           of these Terms, or your violation of any rights of a third party.
@@ -232,7 +232,7 @@ export default function TermsOfServicePage() {
           If you have any questions about these Terms, please contact us at:
         </p>
         <ul>
-          <li>Email: <a href="mailto:legal@fromfattofit.com" className="text-primary hover:underline">legal@fromfattofit.com</a></li>
+          <li>Email: <a href="mailto:legal@devenira.com" className="text-primary hover:underline">legal@devenira.com</a></li>
         </ul>
       </section>
     </article>

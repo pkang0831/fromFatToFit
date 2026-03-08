@@ -14,10 +14,10 @@ const planDefs = [
     highlight: false,
     featureKeys: [
       'landing.planFreeFeature1', 'landing.planFreeFeature2', 'landing.planFreeFeature3',
-      'landing.planFreeFeature4', 'landing.planFreeFeature5',
+      'landing.planFreeFeature5',
     ],
     ctaKey: 'landing.planFreeCta',
-    href: '/register',
+    href: '/try',
   },
   {
     nameKey: 'landing.planPro',

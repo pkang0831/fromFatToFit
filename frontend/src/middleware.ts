@@ -5,13 +5,15 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value;
   const pathname = request.nextUrl.pathname;
   
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/try');
   const isDashboardPage = pathname.startsWith('/home') ||
                         pathname.startsWith('/calories') ||
                         pathname.startsWith('/food-camera') ||
                         pathname.startsWith('/workouts') ||
                         pathname.startsWith('/fasting') ||
                         pathname.startsWith('/body-scan') ||
+                        pathname.startsWith('/beauty-scan') ||
+                        pathname.startsWith('/fashion') ||
                         pathname.startsWith('/chat') ||
                         pathname.startsWith('/profile') ||
                         pathname.startsWith('/progress') ||

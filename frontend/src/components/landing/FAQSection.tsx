@@ -6,12 +6,13 @@ import { ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const faqKeys = [
-  { qKey: 'faq.bodyfatAccuracy.q', aKey: 'faq.bodyfatAccuracy.a' },
-  { qKey: 'faq.credits.q', aKey: 'faq.credits.a' },
-  { qKey: 'faq.foodCamera.q', aKey: 'faq.foodCamera.a' },
+  { qKey: 'faq.photosPrivacy.q', aKey: 'faq.photosPrivacy.a' },
   { qKey: 'faq.transformation.q', aKey: 'faq.transformation.a' },
+  { qKey: 'faq.bodyfatAccuracy.q', aKey: 'faq.bodyfatAccuracy.a' },
+  { qKey: 'faq.weeklyReturn.q', aKey: 'faq.weeklyReturn.a' },
+  { qKey: 'faq.credits.q', aKey: 'faq.credits.a' },
   { qKey: 'faq.cancel.q', aKey: 'faq.cancel.a' },
-  { qKey: 'faq.dataSecurity.q', aKey: 'faq.dataSecurity.a' },
+  { qKey: 'faq.notMedical.q', aKey: 'faq.notMedical.a' },
 ];
 
 export function FAQSection() {

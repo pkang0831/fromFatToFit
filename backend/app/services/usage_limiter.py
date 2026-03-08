@@ -187,10 +187,11 @@ async def get_credit_balance(user_id: str, is_premium: bool = False) -> Dict[str
             total = 10
             reset_date = None
 
+        pro_free_features = {"body_fat_scan", "percentile_scan"}
         credit_costs = {
             "food_scan": 1,
-            "body_fat_scan": 10,
-            "percentile_scan": 10,
+            "body_fat_scan": 0 if is_premium else 10,
+            "percentile_scan": 0 if is_premium else 10,
             "transformation": 30,
             "enhancement": 50,
             "region_transform": 15,

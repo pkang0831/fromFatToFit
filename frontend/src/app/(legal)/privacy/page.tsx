@@ -7,9 +7,9 @@ export default function PrivacyPolicyPage() {
       <section className="mb-8">
         <h2>1. Introduction</h2>
         <p>
-          FromFatToFit (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) is committed to protecting your
+          Devenira (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) is committed to protecting your
           privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information
-          when you use the FromFatToFit application and services (the &ldquo;Service&rdquo;).
+          when you use the Devenira application and services (the &ldquo;Service&rdquo;).
         </p>
         <p>
           <strong>
@@ -218,7 +218,7 @@ export default function PrivacyPolicyPage() {
         </ul>
         <p>
           To exercise any of these rights, please contact us at{' '}
-          <a href="mailto:privacy@fromfattofit.com" className="text-primary hover:underline">privacy@fromfattofit.com</a>.
+          <a href="mailto:privacy@devenira.com" className="text-primary hover:underline">privacy@devenira.com</a>.
           We will respond within 30 days.
         </p>
       </section>
@@ -286,7 +286,7 @@ export default function PrivacyPolicyPage() {
         <h2>14. Contact Us</h2>
         <p>For privacy-related inquiries, requests, or complaints:</p>
         <ul>
-          <li>Email: <a href="mailto:privacy@fromfattofit.com" className="text-primary hover:underline">privacy@fromfattofit.com</a></li>
+          <li>Email: <a href="mailto:privacy@devenira.com" className="text-primary hover:underline">privacy@devenira.com</a></li>
         </ul>
       </section>
     </article>

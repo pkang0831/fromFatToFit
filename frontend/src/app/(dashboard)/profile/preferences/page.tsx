@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui';
 import { foodDecisionApi } from '@/lib/api/services';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserPreferences {
   favorite_foods: string[];
@@ -17,13 +18,13 @@ interface UserPreferences {
   prefer_high_protein: boolean;
 }
 
-const DIETARY_RESTRICTIONS = [
-  { id: 'vegetarian', label: 'Vegetarian' },
-  { id: 'vegan', label: 'Vegan' },
-  { id: 'gluten_free', label: 'Gluten Free' },
-  { id: 'dairy_free', label: 'Dairy Free' },
-  { id: 'halal', label: 'Halal' },
-  { id: 'kosher', label: 'Kosher' },
+const DIETARY_RESTRICTION_KEYS = [
+  { id: 'vegetarian', key: 'preferences.vegetarian' },
+  { id: 'vegan', key: 'preferences.vegan' },
+  { id: 'gluten_free', key: 'preferences.glutenFree' },
+  { id: 'dairy_free', key: 'preferences.dairyFree' },
+  { id: 'halal', key: 'preferences.halal' },
+  { id: 'kosher', key: 'preferences.kosher' },
 ];
 
 const COMMON_ALLERGIES = [
@@ -32,6 +33,7 @@ const COMMON_ALLERGIES = [
 
 export default function FoodPreferencesPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [preferences, setPreferences] = useState<UserPreferences>({
     favorite_foods: [],
     disliked_foods: [],
@@ -61,7 +63,7 @@ export default function FoodPreferencesPage() {
       setPreferences(response.data);
     } catch (err: any) {
       console.error('Error loading preferences:', err);
-      setError('Failed to load preferences');
+      setError(t('preferences.loadFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -74,13 +76,13 @@ export default function FoodPreferencesPage() {
     
     try {
       await foodDecisionApi.updatePreferences(preferences);
-      setSuccessMessage('Settings saved successfully!');
+      setSuccessMessage(t('preferences.saveSuccess'));
       setTimeout(() => setSuccessMessage(null), 3000);
-      toast.success('Food preferences saved');
+      toast.success(t('preferences.saveSuccess'));
     } catch (err: any) {
       console.error('Error saving preferences:', err);
-      setError('Failed to save preferences');
-      toast.error('Failed to save preferences');
+      setError(t('preferences.saveFailed'));
+      toast.error(t('preferences.saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -140,15 +142,15 @@ export default function FoodPreferencesPage() {
       <div className="flex items-center gap-4">
         <Button variant="outline" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t('common.back')}
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Food Preferences Settings</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Custom settings for AI recommendations</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('preferences.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">{t('preferences.subtitle')}</p>
         </div>
         <Button onClick={handleSave} isLoading={isSaving}>
           <Save className="h-4 w-4 mr-2" />
-          Save
+          {t('common.save')}
         </Button>
       </div>
 
@@ -167,11 +169,11 @@ export default function FoodPreferencesPage() {
       {/* Dietary Restrictions */}
       <Card>
         <CardHeader>
-          <CardTitle>Dietary Restrictions</CardTitle>
+          <CardTitle>{t('preferences.dietaryRestrictions')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {DIETARY_RESTRICTIONS.map(restriction => (
+            {DIETARY_RESTRICTION_KEYS.map(restriction => (
               <button
                 key={restriction.id}
                 onClick={() => toggleDietaryRestriction(restriction.id)}
@@ -181,7 +183,7 @@ export default function FoodPreferencesPage() {
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                 }`}
               >
-                {restriction.label}
+                {t(restriction.key)}
               </button>
             ))}
           </div>
@@ -191,7 +193,7 @@ export default function FoodPreferencesPage() {
       {/* Allergies */}
       <Card>
         <CardHeader>
-          <CardTitle>Allergies</CardTitle>
+          <CardTitle>{t('preferences.allergies')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -200,7 +202,7 @@ export default function FoodPreferencesPage() {
               value={newAllergy}
               onChange={(e) => setNewAllergy(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addToList('allergies', newAllergy)}
-              placeholder="Add allergy..."
+              placeholder={t('preferences.addAllergy')}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Button onClick={() => addToList('allergies', newAllergy)}>
@@ -242,7 +244,7 @@ export default function FoodPreferencesPage() {
       {/* Favorite Foods */}
       <Card>
         <CardHeader>
-          <CardTitle>Favorite Foods</CardTitle>
+          <CardTitle>{t('preferences.favoriteFoods')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -251,7 +253,7 @@ export default function FoodPreferencesPage() {
               value={newFavorite}
               onChange={(e) => setNewFavorite(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addToList('favorite_foods', newFavorite)}
-              placeholder="Add favorite food..."
+              placeholder={t('preferences.addFavorite')}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Button onClick={() => addToList('favorite_foods', newFavorite)}>
@@ -281,7 +283,7 @@ export default function FoodPreferencesPage() {
       {/* Disliked Foods */}
       <Card>
         <CardHeader>
-          <CardTitle>Disliked Foods</CardTitle>
+          <CardTitle>{t('preferences.dislikedFoods')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -290,7 +292,7 @@ export default function FoodPreferencesPage() {
               value={newDisliked}
               onChange={(e) => setNewDisliked(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addToList('disliked_foods', newDisliked)}
-              placeholder="Add disliked food..."
+              placeholder={t('preferences.addDisliked')}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Button onClick={() => addToList('disliked_foods', newDisliked)}>
@@ -320,7 +322,7 @@ export default function FoodPreferencesPage() {
       {/* Nutritional Preferences */}
       <Card>
         <CardHeader>
-          <CardTitle>Nutritional Preferences</CardTitle>
+          <CardTitle>{t('preferences.nutritionalPreferences')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="flex items-center gap-3 cursor-pointer">
@@ -333,8 +335,8 @@ export default function FoodPreferencesPage() {
               className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
             <div>
-              <div className="font-semibold text-gray-900 dark:text-white">Prefer high-protein foods</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Prioritizes recommending foods high in protein</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{t('preferences.preferHighProtein')}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('preferences.preferHighProteinDesc')}</div>
             </div>
           </label>
 
@@ -348,8 +350,8 @@ export default function FoodPreferencesPage() {
               className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
             <div>
-              <div className="font-semibold text-gray-900 dark:text-white">Avoid high-sodium foods</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Warns about foods with 800mg or more sodium</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{t('preferences.avoidHighSodium')}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('preferences.avoidHighSodiumDesc')}</div>
             </div>
           </label>
 
@@ -363,8 +365,8 @@ export default function FoodPreferencesPage() {
               className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
             <div>
-              <div className="font-semibold text-gray-900 dark:text-white">Avoid high-sugar foods</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Warns about foods with 25g or more sugar</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{t('preferences.avoidHighSugar')}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('preferences.avoidHighSugarDesc')}</div>
             </div>
           </label>
         </CardContent>

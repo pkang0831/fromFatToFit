@@ -8,7 +8,7 @@ export default function DisclaimerPage() {
         <h2 className="text-amber-800 dark:text-amber-200 mt-0">Important Notice</h2>
         <p className="text-amber-900 dark:text-amber-100 mb-0">
           <strong>
-            FromFatToFit is NOT a medical device, medical application, or healthcare provider.
+            Devenira is NOT a medical device, medical application, or healthcare provider.
             The Service does not provide medical advice, diagnosis, or treatment. Always consult with
             a qualified healthcare professional before starting any diet, exercise, or weight management
             program. Never disregard professional medical advice or delay seeking it because of
@@ -20,7 +20,7 @@ export default function DisclaimerPage() {
       <section className="mb-8">
         <h2>1. Not Medical Advice</h2>
         <p>
-          The information, estimates, analyses, and recommendations provided by FromFatToFit (the
+          The information, estimates, analyses, and recommendations provided by Devenira (the
           &ldquo;Service&rdquo;) are for <strong>general informational and educational purposes only</strong>.
           Nothing in this Service should be construed as:
         </p>
@@ -160,7 +160,7 @@ export default function DisclaimerPage() {
           <li>You use the Service at your own risk.</li>
           <li>You are solely responsible for your health decisions and actions taken based on information from the Service.</li>
           <li>You will consult with qualified healthcare professionals before making significant changes to your diet, exercise routine, or health regimen.</li>
-          <li>You will not hold FromFatToFit liable for any health outcomes, injuries, or adverse effects that may result from using the Service.</li>
+          <li>You will not hold Devenira liable for any health outcomes, injuries, or adverse effects that may result from using the Service.</li>
           <li>You understand that AI-generated content may contain errors and should not be the sole basis for health-related decisions.</li>
         </ul>
       </section>
@@ -168,7 +168,7 @@ export default function DisclaimerPage() {
       <section className="mb-8">
         <h2>9. Regulatory Notice</h2>
         <p>
-          FromFatToFit has not been evaluated, approved, or certified by any government health agency,
+          Devenira has not been evaluated, approved, or certified by any government health agency,
           including but not limited to the U.S. Food and Drug Administration (FDA), the Korean Ministry
           of Food and Drug Safety (MFDS), or equivalent agencies in other jurisdictions. The Service
           is not intended to diagnose, treat, cure, or prevent any disease.
@@ -181,13 +181,13 @@ export default function DisclaimerPage() {
           If you have questions or concerns about this Health Disclaimer, please contact us at:
         </p>
         <ul>
-          <li>Email: <a href="mailto:legal@fromfattofit.com" className="text-primary hover:underline">legal@fromfattofit.com</a></li>
+          <li>Email: <a href="mailto:legal@devenira.com" className="text-primary hover:underline">legal@devenira.com</a></li>
         </ul>
       </section>
 
       <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 mt-12">
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-          By using FromFatToFit, you acknowledge that you have read, understood, and agreed to this
+          By using Devenira, you acknowledge that you have read, understood, and agreed to this
           Health &amp; Medical Disclaimer, our{' '}
           <a href="/terms" className="text-primary hover:underline">Terms of Service</a>, and our{' '}
           <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>.

@@ -1,4 +1,4 @@
-# FromFatToFit — Pre-Production QA Report
+# Devenira — Pre-Production QA Report
 
 **Date:** February 22, 2026  
 **Scope:** Full-stack audit — backend, frontend, UX, security, competitive analysis  
@@ -204,7 +204,7 @@ All dependencies use `>=` version constraints, which is appropriate for developm
 
 ### 6.2 Feature Comparison Matrix
 
-| Feature | FromFatToFit | MyFitnessPal | Noom | Cal AI | MacroFactor |
+| Feature | Devenira | MyFitnessPal | Noom | Cal AI | MacroFactor |
 |---------|:-----------:|:------------:|:----:|:------:|:-----------:|
 | AI Food Camera | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Manual Calorie Logging | ✅ | ✅ | ✅ | ✅ | ✅ |

@@ -1,4 +1,4 @@
-# API Inventory — FromFatToFit
+# API Inventory — Devenira
 
 > All endpoints observed from codebase analysis and UI network traffic.
 > Backend: FastAPI on `http://localhost:8000`

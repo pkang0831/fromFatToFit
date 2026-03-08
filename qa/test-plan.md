@@ -1,4 +1,4 @@
-# Test Plan — FromFatToFit
+# Test Plan — Devenira
 
 ## 1. Scope
 
