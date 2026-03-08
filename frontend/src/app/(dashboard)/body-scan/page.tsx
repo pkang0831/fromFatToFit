@@ -496,7 +496,7 @@ export default function BodyScanPage() {
                   >
                     <Sparkles className="h-16 w-16 text-text-light mx-auto mb-4" />
                     <p className="text-lg font-medium text-text mb-2">Upload your current body photo</p>
-                    <p className="text-sm text-text-secondary">We'll generate your transformation journey</p>
+                    <p className="text-sm text-text-secondary">We&apos;ll generate your transformation journey</p>
                   </div>
                 </div>
               ) : !journeyResult ? (
@@ -641,7 +641,7 @@ export default function BodyScanPage() {
                             Step {journeyStep + 1} of {journeyResult.progress_frames.length}
                           </p>
                           <Image
-                            src={journeyResult.progress_frames[journeyStep]}
+                            src={journeyResult.progress_frames[journeyStep].image_b64}
                             alt={`Step ${journeyStep + 1}`}
                             width={600}
                             height={400}

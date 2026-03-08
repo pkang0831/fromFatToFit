@@ -48,6 +48,7 @@ export default function CaloriesPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedDays]);
 
   const handlePreviousDay = () => {

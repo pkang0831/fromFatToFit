@@ -79,6 +79,7 @@ export function FaceOverlay({ imageSrc, bbox, landmarks, width, height }: FaceOv
 
   return (
     <div className="relative rounded-2xl overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
         src={imageSrc}

@@ -169,6 +169,7 @@ export default function BodyPartSelector({
       };
       img.src = `data:image/png;base64,${maskB64}`;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

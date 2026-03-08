@@ -138,7 +138,8 @@ export default function TryPage() {
               className="space-y-6"
             >
               <div className="rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.02]">
-                <img src={previewUrl} alt="Your photo" className="w-full max-h-72 object-contain bg-black/30" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrl!} alt="Your photo" className="w-full max-h-72 object-contain bg-black/30" />
               </div>
 
               <div className="space-y-4">

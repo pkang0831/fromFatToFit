@@ -30,6 +30,7 @@ export function CalorieBalanceChart({ days }: Props) {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [days]);
 
   const loadData = async () => {

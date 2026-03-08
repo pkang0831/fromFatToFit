@@ -560,6 +560,7 @@ export default function WorkoutsPage() {
                     <span className="text-xs text-text-secondary">Loading animation...</span>
                   </div>
                 ) : exerciseGifUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={exerciseGifUrl}
                     alt={`${selectedExercise.name} animation`}

@@ -45,6 +45,7 @@ export default function NotificationSettingsPage() {
         });
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const togglePush = async () => {

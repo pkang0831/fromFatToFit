@@ -117,7 +117,28 @@
     "testimonial2Quote": "Ver minha prévia de transformação me deu a motivação que eu precisava. Meu objetivo pareceu real e alcançável.",
     "testimonial2Role": "Entusiasta de fitness",
     "testimonial3Quote": "O scan de gordura corporal é incrivelmente preciso. Consegui acompanhar meu progresso de cutting semana a semana sem caros exames DEXA.",
-    "testimonial3Role": "De 25% para 15% de gordura corporal"
+    "testimonial3Role": "De 25% para 15% de gordura corporal",
+    "heroProof": "Free body scan — no sign-up required.",
+    "whyReturnTitle": "Week 1: Curiosity.",
+    "whyReturnHighlight": "Week 8: Proof.",
+    "whyReturnSubtitle": "Whether you're cutting for summer, prepping for a wedding, or chasing a body profile deadline — this is how the gap closes.",
+    "whyReturn1Title": "Your Preview Sets the Target",
+    "whyReturn1Desc": "Day one: you see what your body could look like at your goal weight. That image stops being motivation and starts being the benchmark you measure against every single week.",
+    "whyReturn2Title": "Every Week, the Gap Shrinks",
+    "whyReturn2Desc": "Each scan shows your current body next to your goal preview. Body fat estimate trending. Shape changing. The distance between 'now' and 'target' shifting. That's not hope — that's a visual record.",
+    "whyReturn3Title": "8 Weeks of Visual Proof",
+    "whyReturn3Desc": "By week 8, you have a timeline showing where you started, where you are, and how far you've come. Side-by-side photos that document your journey. That's what no calorie counter can give you.",
+    "trustTitle": "Your Photos.",
+    "trustHighlight": "Your Privacy.",
+    "trustSubtitle": "We know uploading body photos requires trust. Here's exactly how we handle it.",
+    "trust1Title": "Encrypted & Secure",
+    "trust1Desc": "All photos are encrypted in transit and at rest. We use industry-standard TLS encryption and secure cloud storage.",
+    "trust2Title": "Never Sold, Never Shared",
+    "trust2Desc": "Your photos are sent to AI services (OpenAI, Replicate) solely for analysis. They are never stored by third parties, never used for training, and never shared.",
+    "trust3Title": "Delete Anytime",
+    "trust3Desc": "You can delete all your photos and data at any time. When you delete, it's gone — no hidden copies, no backups retained.",
+    "trust4Title": "Not Medical Advice",
+    "trust4Desc": "Body fat estimates are visual AI approximations — not equivalent to DEXA or clinical measurements. Transformation previews are motivational visualizations, not predictions. Always consult a healthcare professional."
   },
   "auth": {
     "signInTitle": "Entre na sua conta",
@@ -619,7 +640,7 @@
     "aiStyled": "Fotos estilizadas por AI",
     "skincareRoutine": "Rotina de skincare",
     "accessorySuggestions": "Sugestões de acessórios",
-    "creditInfo": "10 créditos para análise \u2022 +30 créditos para fotos estilizadas por AI (opcional)",
+    "creditInfo": "10 créditos para análise • +30 créditos para fotos estilizadas por AI (opcional)",
     "gender": "Gênero",
     "female": "Feminino",
     "male": "Masculino",
@@ -798,6 +819,18 @@
     "dataSecurity": {
       "q": "Meus dados estão seguros?",
       "a": "Seus dados são criptografados e armazenados seguindo as melhores práticas do setor. Fotos que você envia são transmitidas com segurança para serviços de AI de terceiros (como OpenAI, Google e Anthropic) para análise — consulte nossa Política de Privacidade para detalhes completos. Não vendemos seus dados. Você pode solicitar a exclusão dos seus dados a qualquer momento."
+    },
+    "photosPrivacy": {
+      "q": "What happens to my photos after I upload them?",
+      "a": "Your photos are encrypted and sent securely to AI services for analysis. They are never stored by third parties, never used for AI training, and never shared with anyone. You can delete all your photos and data at any time from your profile settings."
+    },
+    "weeklyReturn": {
+      "q": "Why should I come back every week?",
+      "a": "Each weekly scan updates your body fat estimate and adds to your progress timeline. Over time, you'll see a clear trend line and side-by-side photo comparisons. This visual proof of progress is what keeps people motivated far longer than calorie apps or workout logs alone."
+    },
+    "notMedical": {
+      "q": "Is this medical advice?",
+      "a": "No. Devenira is a motivational and tracking tool, not a medical device. Body fat estimates are AI approximations, not clinical measurements. Transformation previews are visualizations, not predictions. Always consult a healthcare professional before starting any weight loss or fitness program."
     }
   }
 }

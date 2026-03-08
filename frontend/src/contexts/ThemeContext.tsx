@@ -39,7 +39,7 @@ function applyColorTheme(ct: ColorTheme) {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
-  const [colorTheme, setColorThemeState] = useState<ColorTheme>('cyan');
+  const [colorTheme, setColorThemeState] = useState<ColorTheme>('gold');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

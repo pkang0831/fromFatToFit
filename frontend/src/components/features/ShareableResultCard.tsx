@@ -124,6 +124,7 @@ export function ShareableResultCard({
           <div className="flex gap-3 mb-5">
             {currentImageUrl && (
               <div className="flex-1 rounded-xl overflow-hidden border border-white/[0.06]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={currentImageUrl} alt="Current" className="w-full aspect-[3/4] object-cover" />
                 <div className="px-2 py-1.5 bg-white/[0.04] text-center">
                   <span className="text-[10px] text-white/50 uppercase tracking-wider">Now</span>
@@ -132,6 +133,7 @@ export function ShareableResultCard({
             )}
             {transformedImageUrl && (
               <div className="flex-1 rounded-xl overflow-hidden border border-primary/20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={transformedImageUrl} alt="Goal" className="w-full aspect-[3/4] object-cover" />
                 <div className="px-2 py-1.5 bg-primary/[0.08] text-center">
                   <span className="text-[10px] text-primary/80 uppercase tracking-wider">Goal</span>
