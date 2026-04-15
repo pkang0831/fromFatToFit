@@ -22,6 +22,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://devenira.com'),
   title: {
     default: 'Devenira — See Proof Your Cut Is Working, Weekly',
     template: '%s | Devenira',
