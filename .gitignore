@@ -88,6 +88,12 @@ yarn-error.log*
 *.mp4
 *.png
 !frontend/public/**/*.png
+!frontend/src/app/icon.png
+!frontend/src/app/apple-icon.png
+!mobile/assets/icon.png
+!mobile/assets/adaptive-icon.png
+!mobile/assets/splash.png
+!mobile/assets/favicon.png
 
 # ===== Experiment / scratch directories =====
 tmp/

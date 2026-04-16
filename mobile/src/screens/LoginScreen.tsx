@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../theme';
@@ -40,7 +41,8 @@ export default function LoginScreen({ navigation }: any) {
       style={styles.container}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>Health & Wellness</Text>
+        <Image source={require('../../assets/icon.png')} style={styles.logo} />
+        <Text style={styles.title}>Devenira</Text>
         <Text style={styles.subtitle}>Track your journey to better health</Text>
 
         <View style={styles.form}>
@@ -102,6 +104,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: 'center',
     marginBottom: spacing.sm,
+  },
+  logo: {
+    alignSelf: 'center',
+    width: 84,
+    height: 84,
+    marginBottom: spacing.lg,
+    borderRadius: 24,
   },
   subtitle: {
     ...typography.body1,

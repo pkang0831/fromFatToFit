@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GoogleAnalytics } from '@/components/Analytics';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -79,7 +80,12 @@ export default function RootLayout({
         {/* Fallback when client bundle has not loaded yet (e.g. ChunkLoadError) */}
         <div id="root-fallback" className="fixed inset-0 z-0 flex items-center justify-center bg-[#0a0a0f]" aria-hidden="true">
           <div className="text-center text-white/90">
-            <p className="text-lg font-medium">Devenira</p>
+            <BrandLogo
+              size={52}
+              priority
+              className="justify-center"
+              labelClassName="text-lg font-medium"
+            />
             <p className="text-sm text-white/50 mt-1">Loading…</p>
           </div>
         </div>

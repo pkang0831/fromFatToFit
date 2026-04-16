@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Camera, ArrowRight, Lock, Shield, Sparkles, BarChart3, TrendingUp } from 'lucide-react';
 import { ProcessingOverlay, GUEST_SCAN_STEPS } from '@/components/ui/ProcessingOverlay';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { guestApi } from '@/lib/api/services';
 import { compressAndConvertToBase64 } from '@/lib/utils/image';
 import { formatApiError } from '@/lib/utils/apiError';
@@ -140,8 +141,8 @@ export default function TryPage() {
     <main className="min-h-screen bg-[#0a0a0f] text-white">
       {/* Header */}
       <nav className="flex items-center justify-between px-6 py-5 max-w-4xl mx-auto">
-        <Link href="/" className="text-xl font-bold gradient-text">
-          Devenira
+        <Link href="/" className="text-white transition-opacity hover:opacity-90">
+          <BrandLogo size={42} priority labelClassName="text-xl font-bold text-white" />
         </Link>
         <Link href="/login" className="text-sm text-white/40 hover:text-white/70 transition-colors">
           Already have an account? Sign in
@@ -218,7 +219,7 @@ export default function TryPage() {
 
               <div className="flex items-center justify-center gap-2 mt-6 text-white/20 text-xs">
                 <Shield className="w-3.5 h-3.5" />
-                <span>Guest photos are not saved to a Denevira account. They are sent to AI services for analysis.</span>
+                <span>Guest photos are not saved to a Devenira account. They are sent to AI services for analysis.</span>
               </div>
             </motion.div>
           )}

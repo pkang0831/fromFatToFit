@@ -3,6 +3,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { Download, Share2, Check } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ShareableResultCardProps {
@@ -116,7 +117,11 @@ export function ShareableResultCard({
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-lg font-bold text-white">Devenira</h3>
+            <BrandLogo
+              size={36}
+              className="gap-2.5"
+              labelClassName="text-lg font-bold text-white"
+            />
             <p className="text-xs text-white/40">AI Body Transformation</p>
           </div>
           {weekNumber && (

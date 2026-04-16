@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowRight, CalendarClock, Shield, Target } from 'lucide-react';
 
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { getRetentionSessionId } from '@/lib/analytics';
 import type { PublicProofShareResponse } from '@/types/api';
 
@@ -108,7 +109,7 @@ export default function PublicProofSharePage() {
             href="/"
             className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white text-[#0a0a0f] px-5 py-3 font-medium hover:opacity-90 transition-opacity"
           >
-            Back to Denevira
+            Back to Devenira
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -120,8 +121,8 @@ export default function PublicProofSharePage() {
     <main className="min-h-screen bg-[#0a0a0f] text-white px-6 py-10">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-8">
-          <Link href="/" className="text-xl font-bold text-white">
-            Devenira
+          <Link href="/" className="text-white transition-opacity hover:opacity-90">
+            <BrandLogo size={42} priority labelClassName="text-xl font-bold text-white" />
           </Link>
           <div className="inline-flex items-center gap-2 rounded-full bg-white/[0.05] px-4 py-2 text-xs uppercase tracking-[0.2em] text-white/60">
             <Shield className="h-3.5 w-3.5" />
@@ -196,7 +197,7 @@ export default function PublicProofSharePage() {
                 href={referredTryHref}
                 className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-white hover:bg-emerald-400 transition-colors"
               >
-                Try Denevira free
+                Try Devenira free
                 <ArrowRight className="h-4 w-4" />
               </a>
             </div>
